@@ -9,20 +9,16 @@ import com.juejin.content.dto.ArticleCreateDTO;
 import com.juejin.content.dto.ArticleUpdateDTO;
 import com.juejin.content.entity.Article;
 import com.juejin.content.entity.Category;
-import com.juejin.content.entity.Tag;
 import com.juejin.content.mapper.ArticleMapper;
 import com.juejin.content.mapper.CategoryMapper;
-import com.juejin.content.mapper.TagMapper;
 import com.juejin.content.service.ArticleService;
 import com.juejin.content.vo.ArticleVO;
-import com.juejin.content.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -43,7 +39,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     private final ArticleMapper articleMapper;
     private final CategoryMapper categoryMapper;
-    private final TagMapper tagMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override

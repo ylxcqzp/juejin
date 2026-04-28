@@ -5,7 +5,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
@@ -16,12 +19,28 @@ import java.util.Date;
  * @author juejin
  */
 @Slf4j
+@Component
 public class JwtUtils {
 
-    private static final String SECRET = "juejin-secret-key-for-jwt-signing-2024";
-    private static final long EXPIRATION = 1800; // 30分钟
-    private static final long REFRESH_EXPIRATION = 604800; // 7天
-    private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    @Value("${jwt.secret:juejin-secret-key-for-jwt-signing-2024}")
+    private String secret;
+
+    @Value("${jwt.expiration:1800}")
+    private long expiration;
+
+    @Value("${jwt.refresh-expiration:604800}")
+    private long refreshExpiration;
+
+    private static SecretKey key;
+    private static long EXPIRATION;
+    private static long REFRESH_EXPIRATION;
+
+    @PostConstruct
+    public void init() {
+        key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        EXPIRATION = expiration;
+        REFRESH_EXPIRATION = refreshExpiration;
+    }
 
     /**
      * 生成访问Token
@@ -37,7 +56,7 @@ public class JwtUtils {
                 .setSubject(String.valueOf(userId))
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(KEY, SignatureAlgorithm.HS256)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -67,7 +86,7 @@ public class JwtUtils {
      */
     public static Claims parseToken(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(KEY)
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -93,7 +112,7 @@ public class JwtUtils {
     public static boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(KEY)
+                    .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token);
             return true;
