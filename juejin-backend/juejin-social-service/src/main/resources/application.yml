@@ -1,0 +1,21 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: juejin-social-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+        file-extension: yaml
+
+logging:
+  level:
+    com.juejin.social: debug

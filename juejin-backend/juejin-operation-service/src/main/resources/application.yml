@@ -1,0 +1,21 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: juejin-operation-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+        file-extension: yaml
+
+logging:
+  level:
+    com.juejin.operation: debug

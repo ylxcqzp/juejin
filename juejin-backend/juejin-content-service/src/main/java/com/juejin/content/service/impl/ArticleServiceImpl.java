@@ -2,6 +2,7 @@ package com.juejin.content.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.juejin.common.constants.RedisKey;
 import com.juejin.common.exception.BusinessException;
 import com.juejin.common.result.ErrorCode;
 import com.juejin.common.vo.PageResult;
@@ -108,7 +109,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         updateById(article);
 
         // 清除缓存
-        redisTemplate.delete("article:" + dto.getId());
+        redisTemplate.delete(RedisKey.ARTICLE_DETAIL +dto.getId());
 
         log.info("Article updated: {}, author: {}", article.getId(), authorId);
 
@@ -118,7 +119,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public ArticleVO getArticleById(Long id) {
         // 先从缓存获取
-        String cacheKey = "article:" + id;
+        String cacheKey = RedisKey.ARTICLE_DETAIL +id;
         ArticleVO cached = (ArticleVO) redisTemplate.opsForValue().get(cacheKey);
         if (cached != null) {
             return cached;
@@ -161,7 +162,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         categoryMapper.decrementArticleCount(article.getCategoryId());
 
         // 清除缓存
-        redisTemplate.delete("article:" + id);
+        redisTemplate.delete(RedisKey.ARTICLE_DETAIL +id);
 
         log.info("Article deleted: {}, author: {}", id, authorId);
 
@@ -183,7 +184,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
 
-        return new PageResult<>(records, pageParam.getTotal(), pageParam.getCurrent(), pageParam.getSize());
+        return PageResult.of(records, pageParam.getTotal(), (int) pageParam.getCurrent(), (int) pageParam.getSize());
     }
 
     @Override
@@ -200,7 +201,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
 
-        return new PageResult<>(records, pageParam.getTotal(), pageParam.getCurrent(), pageParam.getSize());
+        return PageResult.of(records, pageParam.getTotal(), (int) pageParam.getCurrent(), (int) pageParam.getSize());
     }
 
     @Override
@@ -219,7 +220,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             return "";
         }
         // 去除Markdown标记，取前200字符
-        String plainText = content.replaceAll("[#*`\\[\\]()]", "").trim();
+        String plainText = content.replaceAll("[#*`(){}\\[\\]]", "").trim();
         if (plainText.length() > 200) {
             return plainText.substring(0, 200) + "...";
         }

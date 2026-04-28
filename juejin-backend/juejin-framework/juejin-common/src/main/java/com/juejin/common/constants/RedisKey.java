@@ -10,7 +10,7 @@ public class RedisKey {
     /**
      * 用户相关
      */
-    public static final String USER_INFO = "user:info:";
+    public static final String USER_INFO = "user:";
     public static final String USER_TOKEN = "user:token:";
     public static final String USER_FOLLOWING = "user:following:";
     public static final String USER_FOLLOWERS = "user:followers:";
@@ -18,7 +18,7 @@ public class RedisKey {
     /**
      * 文章相关
      */
-    public static final String ARTICLE_DETAIL = "article:detail:";
+    public static final String ARTICLE_DETAIL = "article:";
     public static final String ARTICLE_VIEW_COUNT = "article:view:count:";
     public static final String ARTICLE_LIKE_COUNT = "article:like:count:";
     public static final String ARTICLE_HOT = "article:hot";

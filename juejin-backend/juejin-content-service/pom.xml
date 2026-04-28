@@ -12,38 +12,37 @@
 
     <artifactId>juejin-content-service</artifactId>
     <name>juejin-content-service</name>
-    <description>Content Service</description>
+    <description>内容服务 - 文章、标签、分类管理</description>
 
     <dependencies>
-        <!-- Common Module - 包含web、validation、mybatis-plus、redis等基础依赖 -->
+        <!-- Common 基础模块 -->
         <dependency>
             <groupId>com.juejin</groupId>
             <artifactId>juejin-common</artifactId>
         </dependency>
 
-        <!-- Nacos Discovery -->
+        <!-- Framework Starters -->
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-swagger</artifactId>
+        </dependency>
+
+        <!-- Nacos -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
-
-        <!-- Nacos Config -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-
-        <!-- MySQL -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Swagger -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-webmvc-core</artifactId>
         </dependency>
 
         <!-- Lombok -->

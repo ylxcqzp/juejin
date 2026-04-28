@@ -12,44 +12,41 @@
 
     <artifactId>juejin-user-service</artifactId>
     <name>juejin-user-service</name>
-    <description>User Service</description>
+    <description>用户服务 - 注册、登录、用户信息、关注系统</description>
 
     <dependencies>
-        <!-- Common Module - 包含web、validation、mybatis-plus、redis等基础依赖 -->
+        <!-- Common 基础模块 -->
         <dependency>
             <groupId>com.juejin</groupId>
             <artifactId>juejin-common</artifactId>
         </dependency>
 
-        <!-- Nacos Discovery -->
+        <!-- Framework Starters -->
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-swagger</artifactId>
+        </dependency>
+
+        <!-- Nacos -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
-
-        <!-- Nacos Config -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-        </dependency>
-
-        <!-- MySQL -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Security - 仅需要加密模块 -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
-        </dependency>
-
-        <!-- Swagger -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-webmvc-core</artifactId>
         </dependency>
 
         <!-- Lombok -->
