@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.juejin.starter.redis.JuejinRedisAutoConfiguration

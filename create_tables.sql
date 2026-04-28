@@ -22,6 +22,7 @@ CREATE TABLE `user` (
   `article_count` INT NOT NULL DEFAULT 0,
   `like_count` INT NOT NULL DEFAULT 0,
   `status` TINYINT NOT NULL DEFAULT 0,
+  `role` TINYINT NOT NULL DEFAULT 0 COMMENT '角色（0-普通用户 1-认证作者 2-管理员）',
   `last_login_time` DATETIME NULL,
   `last_login_ip` VARCHAR(50) NULL,
   `login_fail_count` INT NOT NULL DEFAULT 0,

@@ -1,0 +1,114 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: juejin-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://juejin-user-service
+          predicates:
+            - Path=/api/v1/users/**,/api/v1/auth/**
+          filters:
+            - StripPrefix=0
+            
+        # 内容服务路由
+        - id: content-service
+          uri: lb://juejin-content-service
+          predicates:
+            - Path=/api/v1/articles/**,/api/v1/tags/**,/api/v1/categories/**,/api/v1/columns/**
+          filters:
+            - StripPrefix=0
+            
+        # 社交服务路由
+        - id: social-service
+          uri: lb://juejin-social-service
+          predicates:
+            - Path=/api/v1/likes/**,/api/v1/comments/**,/api/v1/favorites/**,/api/v1/pins/**,/api/v1/feed/**
+          filters:
+            - StripPrefix=0
+            
+        # 运营服务路由
+        - id: operation-service
+          uri: lb://juejin-operation-service
+          predicates:
+            - Path=/api/v1/signs/**,/api/v1/tasks/**,/api/v1/uploads/**,/api/v1/search/**
+          filters:
+            - StripPrefix=0
+            
+      # 全局跨域配置
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+            
+    # Nacos配置
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+      config:
+        server-addr: localhost:8848
+        namespace: dev
+        group: DEFAULT_GROUP
+        file-extension: yaml
+        
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 0
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+# JWT配置
+jwt:
+  secret: juejin-secret-key-for-jwt-signing-2024
+  expiration: 1800
+  refresh-expiration: 604800
+
+# 白名单路径（不需要认证）
+auth:
+  whitelist:
+    - /api/v1/users/register
+    - /api/v1/users/login
+    - /api/v1/auth/**
+    - /api/v1/articles
+    - /api/v1/articles/**
+    - /api/v1/tags
+    - /api/v1/categories
+    - /api/v1/feed/**
+    - /api/v1/search/**
+    - /api/v1/pins
+    - /v3/api-docs/**
+    - /swagger-ui/**
+    - /webjars/**
+
+# Sentinel配置
+sentinel:
+  transport:
+    dashboard: localhost:8858
+  eager: true
+
+# 日志配置
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: INFO
