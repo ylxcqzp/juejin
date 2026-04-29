@@ -15,7 +15,8 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnProperty(prefix = "jwt", name = "secret")
 @Import({
         JwtUtils.class,
-        SecurityUtils.class
+        SecurityUtils.class,
+        com.juejin.starter.security.config.SecurityConfig.class
 })
 public class JuejinSecurityAutoConfiguration {
 

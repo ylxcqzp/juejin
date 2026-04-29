@@ -313,7 +313,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void sendVerifyCode(VerifyCodeDTO dto) {
         checkVerifyRateLimit(dto.getAccount(), dto.getType());
-        String code = "888888"; // 伪验证码
+        // 生成6位随机验证码，存入 Redis，5分钟有效
+        String code = generateVerificationCode();
         String key = VERIFY_CODE_PREFIX + dto.getType() + ":" + dto.getAccount();
         redisTemplate.opsForValue().set(key, code, 5, TimeUnit.MINUTES);
         log.info("Verification code sent to {}:{} -> {}", dto.getType(), dto.getAccount(), code);
@@ -334,7 +335,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return;
         }
         checkVerifyRateLimit(dto.getAccount(), dto.getType());
-        String code = "888888";
+        // 生成6位随机验证码，存入 Redis，5分钟有效
+        String code = generateVerificationCode();
         String key = RESET_CODE_PREFIX + dto.getType() + ":" + dto.getAccount();
         redisTemplate.opsForValue().set(key, code, 5, TimeUnit.MINUTES);
         log.info("Password reset code sent to {}:{} -> {}", dto.getType(), dto.getAccount(), code);
@@ -508,6 +510,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }).collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer addPoints(Long userId, Integer points) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        user.setPoints(user.getPoints() + points);
+        userMapper.updateById(user);
+        // 清除缓存
+        redisTemplate.delete(RedisKey.USER_INFO + userId);
+        log.info("Points added: userId={}, points={}, total={}", userId, points, user.getPoints());
+        return user.getPoints();
+    }
+
     // --- private helpers ---
 
     private UserVO convertToVO(User user) {
@@ -575,6 +592,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.VERIFICATION_CODE_TOO_FREQUENT);
         }
         redisTemplate.opsForValue().set(limitKey, "1", 60, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 生成6位随机数字验证码（开发阶段通过日志打印，后续可对接短信/邮件服务）
+     */
+    private String generateVerificationCode() {
+        int code = (int) (Math.random() * 900000) + 100000;
+        return String.valueOf(code);
     }
 
     private int calculateLevel(int points) {

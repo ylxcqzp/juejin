@@ -15,18 +15,43 @@
     <description>社交服务 - 点赞、评论、收藏、沸点、Feed流</description>
 
     <dependencies>
+        <!-- Common 基础模块 -->
         <dependency>
             <groupId>com.juejin</groupId>
             <artifactId>juejin-common</artifactId>
         </dependency>
+
+        <!-- Framework Starters -->
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-swagger</artifactId>
+        </dependency>
+
+        <!-- Nacos -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
+
+        <!-- LoadBalancer -->
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
+
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

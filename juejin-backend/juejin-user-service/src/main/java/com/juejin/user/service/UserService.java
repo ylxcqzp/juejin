@@ -49,4 +49,13 @@ public interface UserService extends IService<User> {
 
     java.util.List<UserBadgeVO> getUserBadges(Long userId);
 
+    /**
+     * 增加用户掘力值（内部调用：签到/任务奖励）
+     *
+     * @param userId 用户ID
+     * @param points 要增加的掘力值
+     * @return 增加后的掘力值
+     */
+    Integer addPoints(Long userId, Integer points);
+
 }

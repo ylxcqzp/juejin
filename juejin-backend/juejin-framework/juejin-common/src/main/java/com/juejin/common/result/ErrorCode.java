@@ -41,11 +41,26 @@ public enum ErrorCode {
     ARTICLE_UNDER_REVIEW(2002, "Article is under review"),
     NO_EDIT_PERMISSION(2003, "No permission to edit this article"),
     TAG_NOT_FOUND(2004, "Tag not found"),
+    TAG_ALREADY_EXISTS(2005, "Tag name already exists"),
+    CATEGORY_NOT_FOUND(2006, "Category not found"),
+    CATEGORY_ALREADY_EXISTS(2007, "Category name already exists"),
+    DRAFT_NOT_FOUND(2008, "Draft not found"),
+    DRAFT_LIMIT_EXCEEDED(2009, "Up to 50 drafts"),
+    ARTICLE_UNPUBLISHED(2010, "Article is not published"),
+    ALREADY_PUBLISHED(2011, "Article is already published"),
 
     // Social Service Error Codes (3000-3999)
     ALREADY_LIKED(3001, "Already liked"),
     NOT_LIKED(3002, "Not liked yet"),
     COMMENT_NOT_FOUND(3003, "Comment not found"),
+    ALREADY_FAVORITED(3004, "Already favorited"),
+    NOT_FAVORITED(3005, "Not favorited yet"),
+    FOLDER_NOT_FOUND(3006, "Favorite folder not found"),
+    FOLDER_ALREADY_EXISTS(3007, "Folder name already exists"),
+    FOLDER_LIMIT_EXCEEDED(3008, "Up to 20 favorite folders"),
+    CANNOT_DELETE_DEFAULT_FOLDER(3009, "Cannot delete the default folder"),
+    NO_DELETE_PERMISSION(3010, "No permission to delete"),
+    NOT_SUPPORTED(3011, "Operation not supported"),
 
     // Operation Service Error Codes (4000-4999)
     ALREADY_SIGNED(4001, "Already signed in today"),

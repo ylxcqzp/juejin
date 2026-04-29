@@ -1,7 +1,6 @@
 package com.juejin.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.juejin.common.dto.PageParam;
 import com.juejin.common.exception.BusinessException;
@@ -93,13 +92,11 @@ public class FollowServiceImpl extends ServiceImpl<UserFollowMapper, UserFollow>
 
     @Override
     public PageResult<FollowUserVO> getFollowingList(Long userId, PageParam pageParam) {
-        Page<FollowUserRow> page = new Page<>(pageParam.getPage(), pageParam.getSize());
-        // 使用 MyBatis-Plus 分页手动计算 total
-        List<FollowUserRow> allRows = userFollowMapper.selectFollowingList(userId);
-        int total = allRows.size();
-        int fromIndex = (pageParam.getPage() - 1) * pageParam.getSize();
-        int toIndex = Math.min(fromIndex + pageParam.getSize(), total);
-        List<FollowUserRow> pageRows = fromIndex < total ? allRows.subList(fromIndex, toIndex) : List.of();
+        // SQL 分页查询：避免全量数据加载到内存
+        int offset = (pageParam.getPage() - 1) * pageParam.getSize();
+        List<FollowUserRow> pageRows = userFollowMapper.selectFollowingList(userId, offset, pageParam.getSize());
+        long total = userFollowMapper.countFollowing(userId);
+
         List<FollowUserVO> list = pageRows.stream().map(row -> {
             FollowUserVO vo = new FollowUserVO();
             vo.setId(row.getFollowingId());
@@ -111,16 +108,16 @@ public class FollowServiceImpl extends ServiceImpl<UserFollowMapper, UserFollow>
             vo.setIsMutualFollow(userFollowMapper.countMutualFollow(userId, row.getFollowingId()) > 0);
             return vo;
         }).collect(Collectors.toList());
-        return PageResult.of(list, (long) total, pageParam.getPage(), pageParam.getSize());
+        return PageResult.of(list, total, pageParam.getPage(), pageParam.getSize());
     }
 
     @Override
     public PageResult<FollowUserVO> getFollowerList(Long userId, PageParam pageParam) {
-        List<FollowUserRow> allRows = userFollowMapper.selectFollowerList(userId);
-        int total = allRows.size();
-        int fromIndex = (pageParam.getPage() - 1) * pageParam.getSize();
-        int toIndex = Math.min(fromIndex + pageParam.getSize(), total);
-        List<FollowUserRow> pageRows = fromIndex < total ? allRows.subList(fromIndex, toIndex) : List.of();
+        // SQL 分页查询：避免全量数据加载到内存
+        int offset = (pageParam.getPage() - 1) * pageParam.getSize();
+        List<FollowUserRow> pageRows = userFollowMapper.selectFollowerList(userId, offset, pageParam.getSize());
+        long total = userFollowMapper.countFollowers(userId);
+
         List<FollowUserVO> list = pageRows.stream().map(row -> {
             FollowUserVO vo = new FollowUserVO();
             vo.setId(row.getUserId());
@@ -132,7 +129,7 @@ public class FollowServiceImpl extends ServiceImpl<UserFollowMapper, UserFollow>
             vo.setIsMutualFollow(userFollowMapper.countMutualFollow(userId, row.getUserId()) > 0);
             return vo;
         }).collect(Collectors.toList());
-        return PageResult.of(list, (long) total, pageParam.getPage(), pageParam.getSize());
+        return PageResult.of(list, total, pageParam.getPage(), pageParam.getSize());
     }
 
     @Override

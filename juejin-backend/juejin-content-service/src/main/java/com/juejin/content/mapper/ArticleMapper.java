@@ -48,6 +48,18 @@ public interface ArticleMapper extends BaseMapper<Article> {
     void decrementCommentCount(@Param("id") Long id);
 
     /**
+     * 增加收藏数
+     */
+    @Update("UPDATE article SET favorite_count = favorite_count + 1 WHERE id = #{id}")
+    void incrementFavoriteCount(@Param("id") Long id);
+
+    /**
+     * 减少收藏数
+     */
+    @Update("UPDATE article SET favorite_count = favorite_count - 1 WHERE id = #{id} AND favorite_count > 0")
+    void decrementFavoriteCount(@Param("id") Long id);
+
+    /**
      * 查询热门文章
      */
     @Select("SELECT * FROM article WHERE status = 2 AND deleted = 0 ORDER BY view_count DESC LIMIT #{limit}")

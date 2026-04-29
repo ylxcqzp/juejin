@@ -2,6 +2,8 @@ package com.juejin.user.controller;
 
 import com.juejin.common.result.Result;
 import com.juejin.user.dto.*;
+import com.juejin.user.service.BadgeService;
+import com.juejin.user.service.PrivacyService;
 import com.juejin.user.service.UserService;
 import com.juejin.user.vo.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +23,8 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final PrivacyService privacyService;
+    private final BadgeService badgeService;
 
     @Operation(summary = "邮箱注册", description = "新用户邮箱注册接口")
     @PostMapping("/register")
@@ -60,6 +64,13 @@ public class UserController {
     public Result<UserVO> getUserById(
             @Parameter(description = "用户ID", required = true) @PathVariable Long id) {
         return Result.success(userService.getUserById(id));
+    }
+
+    @Operation(summary = "检查用户是否存在", description = "内部调用，检查用户是否存在")
+    @GetMapping("/{id}/exists")
+    public Result<Boolean> checkUserExists(
+            @Parameter(description = "用户ID", required = true) @PathVariable Long id) {
+        return Result.success(userService.getUserById(id) != null);
     }
 
     @Operation(summary = "获取用户公开资料", description = "获取用户完整公开资料（含社交链接）")
@@ -125,6 +136,14 @@ public class UserController {
         return Result.success(userService.getPoints(userId));
     }
 
+    @Operation(summary = "增加掘力值", description = "增加指定用户的掘力值（内部调用：签到/任务奖励等）")
+    @PostMapping("/{id}/points/add")
+    public Result<Integer> addPoints(
+            @Parameter(description = "用户ID", required = true) @PathVariable Long id,
+            @Parameter(description = "要增加的掘力值", required = true) @RequestParam Integer points) {
+        return Result.success(userService.addPoints(id, points));
+    }
+
     @Operation(summary = "获取用户徽章", description = "获取当前用户获得的徽章列表")
     @GetMapping("/badges")
     public Result<List<UserBadgeVO>> getMyBadges(
@@ -179,5 +198,33 @@ public class UserController {
             @RequestHeader("X-User-Id") Long userId) {
         userService.revokeAccountCancellation(userId);
         return Result.success();
+    }
+
+    // ==================== 隐私设置 ====================
+
+    @Operation(summary = "获取隐私设置", description = "获取当前用户的隐私设置")
+    @GetMapping("/privacy")
+    public Result<UserProfileVO.PrivacyVO> getPrivacy(
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId) {
+        return Result.success(privacyService.getPrivacy(userId));
+    }
+
+    @Operation(summary = "更新隐私设置", description = "更新当前用户的隐私设置")
+    @PutMapping("/privacy")
+    public Result<Void> updatePrivacy(
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestBody @Validated UpdatePrivacyDTO dto) {
+        privacyService.updatePrivacy(userId, dto);
+        return Result.success();
+    }
+
+    // ==================== 徽章系统 ====================
+
+    @Operation(summary = "获取全部徽章列表", description = "获取系统中所有可用的徽章")
+    @GetMapping("/badges/all")
+    public Result<List<BadgeVO>> getAllBadges() {
+        return Result.success(badgeService.getAllBadges());
     }
 }

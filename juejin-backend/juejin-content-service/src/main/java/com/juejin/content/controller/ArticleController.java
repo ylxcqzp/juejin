@@ -6,6 +6,7 @@ import com.juejin.content.dto.ArticleCreateDTO;
 import com.juejin.content.dto.ArticleUpdateDTO;
 import com.juejin.content.service.ArticleService;
 import com.juejin.content.vo.ArticleVO;
+import com.juejin.content.vo.ArticleVersionVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -155,6 +156,60 @@ public class ArticleController {
             @RequestParam(defaultValue = "10") Integer limit) {
         List<ArticleVO> articles = articleService.getHotArticles(limit);
         return Result.success(articles);
+    }
+
+    // ==================== 审核管理 ====================
+
+    @Operation(summary = "提交审核", description = "提交文章进入审核流程，仅草稿和已驳回状态可操作")
+    @PostMapping("/{id}/review")
+    public Result<Boolean> submitForReview(
+            @Parameter(description = "文章ID", required = true) @PathVariable Long id,
+            @Parameter(description = "用户ID", hidden = true) @RequestHeader("X-User-Id") Long userId) {
+        return Result.success(articleService.submitForReview(id, userId));
+    }
+
+    @Operation(summary = "审核通过", description = "审核通过文章（管理员操作）")
+    @PostMapping("/{id}/approve")
+    public Result<Boolean> approveArticle(
+            @Parameter(description = "文章ID", required = true) @PathVariable Long id,
+            @Parameter(description = "审核人ID", hidden = true) @RequestHeader("X-User-Id") Long userId) {
+        return Result.success(articleService.approveArticle(id, userId));
+    }
+
+    @Operation(summary = "审核驳回", description = "驳回文章并说明原因（管理员操作）")
+    @PostMapping("/{id}/reject")
+    public Result<Boolean> rejectArticle(
+            @Parameter(description = "文章ID", required = true) @PathVariable Long id,
+            @Parameter(description = "审核人ID", hidden = true) @RequestHeader("X-User-Id") Long userId,
+            @Parameter(description = "驳回原因", required = true) @RequestParam String reason) {
+        return Result.success(articleService.rejectArticle(id, userId, reason));
+    }
+
+    // ==================== 版本管理 ====================
+
+    @Operation(summary = "获取文章版本列表", description = "获取文章的所有历史版本")
+    @GetMapping("/{id}/versions")
+    public Result<List<ArticleVersionVO>> getArticleVersions(
+            @Parameter(description = "文章ID", required = true) @PathVariable Long id) {
+        return Result.success(articleService.getArticleVersions(id));
+    }
+
+    @Operation(summary = "搜索文章", description = "根据关键词搜索已发布文章的标题和摘要（MySQL LIKE方式）")
+    @GetMapping("/search")
+    public Result<PageResult<ArticleVO>> searchArticles(
+            @Parameter(description = "搜索关键词", required = true, example = "Spring Boot") @RequestParam String keyword,
+            @Parameter(description = "页码", example = "1") @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页数量", example = "10") @RequestParam(defaultValue = "10") Integer size) {
+        return Result.success(articleService.searchArticles(keyword, page, size));
+    }
+
+    @Operation(summary = "回滚到历史版本", description = "将文章内容回滚到指定版本，回滚后重新进入审核")
+    @PostMapping("/{id}/versions/{versionId}/rollback")
+    public Result<ArticleVO> rollbackToVersion(
+            @Parameter(description = "文章ID", required = true) @PathVariable Long id,
+            @Parameter(description = "版本ID", required = true) @PathVariable Long versionId,
+            @Parameter(description = "用户ID", hidden = true) @RequestHeader("X-User-Id") Long userId) {
+        return Result.success(articleService.rollbackToVersion(id, versionId, userId));
     }
 
 }

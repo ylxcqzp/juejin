@@ -10,11 +10,6 @@ spring:
         server-addr: localhost:8848
         namespace: dev
         group: DEFAULT_GROUP
-      config:
-        server-addr: localhost:8848
-        namespace: dev
-        group: DEFAULT_GROUP
-        file-extension: yaml
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver

@@ -1,6 +1,7 @@
 package com.juejin.starter.redis;
 
 import com.juejin.starter.redis.config.RedisConfig;
+import com.juejin.starter.redis.config.RedissonConfig;
 import com.juejin.starter.redis.utils.RedisUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 @ConditionalOnClass(RedisTemplate.class)
 @Import({
         RedisConfig.class,
+        RedissonConfig.class,
         RedisUtils.class
 })
 public class JuejinRedisAutoConfiguration {

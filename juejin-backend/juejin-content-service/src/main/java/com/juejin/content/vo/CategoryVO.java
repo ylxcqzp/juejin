@@ -1,5 +1,6 @@
 package com.juejin.content.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,23 +11,24 @@ import java.io.Serializable;
  * @author juejin
  */
 @Data
+@Schema(description = "文章分类信息")
 public class CategoryVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 分类ID */
+    @Schema(description = "分类ID", example = "2")
     private Long id;
 
-    /** 分类名称 */
+    @Schema(description = "分类名称", example = "后端")
     private String name;
 
-    /** 分类描述 */
+    @Schema(description = "分类描述", example = "后端开发相关技术")
     private String description;
 
-    /** 图标 */
+    @Schema(description = "图标URL")
     private String icon;
 
-    /** 文章数量 */
+    @Schema(description = "该分类下的文章数量", example = "128")
     private Integer articleCount;
 
 }
