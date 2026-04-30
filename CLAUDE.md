@@ -163,10 +163,13 @@ Configured via `jwt.secret`, `jwt.expiration`, `jwt.refresh-expiration` in appli
 | Spring Boot | 2.6.13 |
 | Spring Cloud | 2021.0.5 |
 | Spring Cloud Alibaba | 2021.0.5.0 |
-| MyBatis-Plus | 3.5.3.1 |
-| Nacos | 2.x |
+| MySQL | 8.0 (端口 3307, 账号 root/root) |
+| Nacos Server | 2.4.3 (端口 8848, namespace: dev) |
+| Redis | 7.2.5 (端口 6379) |
+| RabbitMQ | 3.9.13 |
 | Sentinel | 1.8.6 |
-| Knife4j | 4.0.0 |
+| MyBatis-Plus | 3.5.3.1 |
+| Knife4j | 4.1.0 |
 | Druid | 1.2.16 |
 | Redisson | 3.19.0 |
 | Hutool | 5.8.11 |

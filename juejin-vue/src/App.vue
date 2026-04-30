@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import AuthLayout from '@/layouts/AuthLayout.vue'
+
+const route = useRoute()
+
+const layout = computed(() => (route.meta.layout as string) === 'auth' ? AuthLayout : DefaultLayout)
 </script>
 
 <template>
-  <HelloWorld />
+  <component :is="layout">
+    <router-view />
+  </component>
 </template>

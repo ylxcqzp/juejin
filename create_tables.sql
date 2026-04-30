@@ -1,7 +1,16 @@
--- 数据库：juejin
+-- ==========================================
+-- 数据库：ghost-juejin
+-- MySQL 版本：8.0+
 -- 字符集：utf8mb4
 -- 排序规则：utf8mb4_unicode_ci
 -- 存储引擎：InnoDB
+-- ==========================================
+
+CREATE DATABASE IF NOT EXISTS `ghost-juejin`
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE `ghost-juejin`;
 
 -- 1. 用户模块
 
