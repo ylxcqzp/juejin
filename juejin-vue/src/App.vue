@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const route = useRoute()
 
@@ -13,4 +14,5 @@ const layout = computed(() => (route.meta.layout as string) === 'auth' ? AuthLay
   <component :is="layout">
     <router-view />
   </component>
+  <ToastContainer />
 </template>

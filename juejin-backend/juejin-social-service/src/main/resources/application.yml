@@ -55,3 +55,7 @@ jwt:
 logging:
   level:
     com.juejin.social: debug
+
+# 本服务公开路径（无需认证）
+security:
+  public-paths: GET:/api/v1/feed/recommend,GET:/api/v1/feed/hot,GET:/api/v1/pins/**,GET:/api/v1/comments,GET:/api/v1/likes,GET:/api/v1/feed/**/status

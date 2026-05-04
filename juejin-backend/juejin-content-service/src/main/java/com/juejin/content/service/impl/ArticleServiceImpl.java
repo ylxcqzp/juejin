@@ -257,7 +257,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         lambdaQuery()
                 .eq(Article::getAuthorId, userId)
-                .eq(Article::getStatus, 2)
                 .orderByDesc(Article::getPublishTime)
                 .page(pageParam);
 

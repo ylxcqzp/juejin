@@ -57,3 +57,7 @@ jwt:
 logging:
   level:
     com.juejin.user: DEBUG
+
+# 本服务公开路径（无需认证），支持 METHOD:/path/** 格式
+security:
+  public-paths: POST:/api/v1/users/register,POST:/api/v1/users/register/phone,POST:/api/v1/users/login,POST:/api/v1/users/verify-code,GET:/api/v1/users/*,GET:/api/v1/users/*/exists,GET:/api/v1/users/*/profile,GET:/api/v1/users/*/following,GET:/api/v1/users/*/followers,GET:/api/v1/users/badges/all,/api/v1/auth/**

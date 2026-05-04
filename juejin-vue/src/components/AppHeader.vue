@@ -16,7 +16,6 @@ const showUserMenu = ref(false)
 const navItems = computed(() => [
   { label: '首页', path: '/' },
   { label: '沸点', path: '/pins' },
-  { label: '标签', path: '/tags' },
 ])
 
 const isActive = (path: string) => {

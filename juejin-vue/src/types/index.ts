@@ -259,6 +259,26 @@ export interface FeedVO {
   createTime: string
 }
 
+// 收藏夹
+export interface FavoriteFolderVO {
+  id: number
+  name: string
+  description: string
+  isPublic: boolean
+  articleCount: number
+}
+
+// 收藏记录
+export interface FavoriteRecordVO {
+  id: number
+  articleId: number
+  title: string
+  summary: string
+  coverImage: string
+  authorNickname: string
+  favoriteTime: string
+}
+
 // 分页参数
 export interface PageParam {
   page: number

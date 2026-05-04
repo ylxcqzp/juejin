@@ -10,7 +10,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  *
  * @author juejin
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.juejin.content", "com.juejin.common"})
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.juejin.common.feign")
 public class ContentServiceApplication {

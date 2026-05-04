@@ -80,7 +80,7 @@ jwt:
 
 # 白名单路径（不需要认证），逗号分隔
 auth:
-  whitelist: /api/v1/users/register,/api/v1/users/login,/api/v1/auth/**,/api/v1/tags/**,/api/v1/categories/**,/api/v1/feed/**,/api/v1/search/**,/api/v1/pins/**,/v3/api-docs/**,/swagger-ui/**,/webjars/**
+  whitelist: POST:/api/v1/users/register,POST:/api/v1/users/register/phone,POST:/api/v1/users/login,POST:/api/v1/users/verify-code,/api/v1/auth/**,/v3/api-docs/**,/swagger-ui/**,/webjars/**
 
 # Sentinel配置
 sentinel:

@@ -7,6 +7,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -63,6 +64,13 @@ public class GlobalExceptionHandler {
     public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("Message not readable: {}", e.getMessage());
         return Result.error(ErrorCode.BAD_REQUEST.getCode(), "请求参数格式错误，请检查 JSON 格式");
+    }
+
+    // 缺少必填请求头（X-User-Id 等）
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public Result<Void> handleMissingRequestHeaderException(MissingRequestHeaderException e) {
+        log.warn("Missing request header: {}", e.getMessage());
+        return Result.error(ErrorCode.UNAUTHORIZED.getCode(), "缺少认证信息，请重新登录");
     }
 
     // 缺少必填参数

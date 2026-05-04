@@ -42,3 +42,7 @@ mybatis-plus:
 logging:
   level:
     com.juejin.content: debug
+
+# 本服务公开路径（无需认证）
+security:
+  public-paths: GET:/api/v1/articles/**,GET:/api/v1/tags/**,GET:/api/v1/categories/**,GET:/api/v1/search/**

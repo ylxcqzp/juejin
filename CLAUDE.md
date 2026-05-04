@@ -56,9 +56,53 @@ juejin-backend/
 ├── juejin-gateway/                  # Spring Cloud Gateway (port 8080) — routing, AuthFilter, CORS, Sentinel
 ├── juejin-user-service/             # User registration/login/profile/follow/badges (port 8081)
 ├── juejin-content-service/          # Articles, tags, categories (port 8082)
-├── juejin-social-service/           # Placeholder — Application class only (port 8083)
-└── juejin-operation-service/        # Placeholder — Application class only (port 8084)
+├── juejin-social-service/           # Likes, comments, favorites, pins, feed, notifications (port 8083)
+└── juejin-operation-service/        # Sign-in, tasks (port 8084)
 ```
+
+### Frontend (Vue 3 + TypeScript + Tailwind CSS 4)
+
+```
+juejin-vue/src/
+├── api/                              # API 接口层（12个资源模块）
+│   ├── request.ts                    # Axios实例 + JWT拦截器
+│   ├── index.ts                      # 统一导出
+│   ├── articles.ts / users.ts        # 内容/用户
+│   ├── comments.ts / likes.ts        # 评论/点赞
+│   ├── pins.ts / feed.ts             # 沸点/Feed流
+│   ├── notifications.ts / drafts.ts  # 通知/草稿
+│   ├── tags.ts / categories.ts       # 标签/分类
+│   └── favorites.ts / signs.ts / tasks.ts  # 收藏/签到/任务
+├── stores/                           # Pinia状态管理
+│   ├── auth.ts                       # 登录/登出/Token刷新/用户缓存
+│   └── app.ts                        # UI状态（侧边栏/菜单）
+├── router/
+│   └── index.ts                      # 13条路由 + 导航守卫
+├── types/
+│   └── index.ts                      # 25+ TypeScript接口
+├── views/                            # 13个页面组件
+│   ├── HomeView.vue                  # 首页（推荐/关注/热门三Tab + 瀑布流）
+│   ├── ArticleDetailView.vue         # 文章详情（目录导航 + 嵌套评论）
+│   ├── EditorView.vue                # Markdown编辑器（编辑+预览 + 自动保存）
+│   ├── UserProfileView.vue           # 用户主页（资料卡 + 文章/沸点/收藏Tab）
+│   ├── LoginView.vue / RegisterView.vue  # 登录/注册
+│   ├── PinListView.vue               # 沸点列表 + 发布
+│   ├── TagListView.vue               # 标签网格/列表
+│   ├── CategoryView.vue              # 分类详情 + 文章列表
+│   ├── SearchResultView.vue          # 搜索 + 关键词高亮
+│   ├── NotificationView.vue          # 通知中心（类型筛选 + 未读标记）
+│   ├── SettingsView.vue              # 设置（资料/密码/隐私/社交链接）
+│   └── DraftListView.vue             # 草稿箱（继续编辑 + 删除）
+├── components/
+│   ├── AppHeader.vue                 # 全局导航栏
+│   └── UserAvatar.vue                # 可复用头像组件
+├── layouts/
+│   ├── DefaultLayout.vue             # 默认布局（Header + Main）
+│   └── AuthLayout.vue                # 登录/注册布局
+└── style.css                         # Tailwind + 掘金品牌色定义
+```
+
+**API代理**: Vite代理 `/api/v1` → `localhost:8080`（Gateway）
 
 ### Starter dependency model
 
@@ -84,8 +128,8 @@ Example service dependency set:
 |-------|---------------|-------|
 | `/api/v1/users/**`, `/api/v1/auth/**` | `juejin-user-service` | |
 | `/api/v1/articles/**`, `/api/v1/tags/**`, `/api/v1/categories/**` | `juejin-content-service` | Article write ops require JWT |
-| `/api/v1/likes/**`, `/api/v1/comments/**`, `/api/v1/favorites/**`, `/api/v1/pins/**`, `/api/v1/feed/**` | `juejin-social-service` | Not yet implemented |
-| `/api/v1/signs/**`, `/api/v1/tasks/**`, `/api/v1/uploads/**`, `/api/v1/search/**` | `juejin-operation-service` | Not yet implemented |
+| `/api/v1/likes/**`, `/api/v1/comments/**`, `/api/v1/favorites/**`, `/api/v1/pins/**`, `/api/v1/feed/**` | `juejin-social-service` | |
+| `/api/v1/signs/**`, `/api/v1/tasks/**`, `/api/v1/uploads/**`, `/api/v1/search/**` | `juejin-operation-service` | |
 
 ### Auth flow
 
@@ -188,4 +232,5 @@ Configured via `jwt.secret`, `jwt.expiration`, `jwt.refresh-expiration` in appli
 - Gateway Sentinel requires `spring-cloud-alibaba-sentinel-gateway` dependency (not just `spring-cloud-starter-alibaba-sentinel`)
 - `BaseEntity` fields `creator` and `updater` are annotated for auto-fill but the handler does not populate them — they remain null
 - `ArticleServiceImpl.convertToVO` calls `categoryMapper.selectById` per-article (N+1 query), fine for detail pages but batch list endpoints may need optimization
-- social-service and operation-service are minimal placeholders (Application class + empty config), ready for implementation
+- social-service and operation-service are fully implemented (May 2026) — 6 controllers + 2 controllers respectively
+- Frontend EditorView chunk is large (~960KB) due to highlight.js — consider dynamic import if load time becomes an issue

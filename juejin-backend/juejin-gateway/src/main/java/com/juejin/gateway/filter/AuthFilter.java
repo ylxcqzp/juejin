@@ -50,8 +50,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
-        // 检查是否是白名单路径
-        if (isWhitelisted(path)) {
+        // 检查是否是白名单路径（支持 METHOD:path 格式限制 HTTP 方法）
+        if (isWhitelisted(path, request.getMethodValue())) {
             return chain.filter(exchange);
         }
 
@@ -83,10 +83,24 @@ public class AuthFilter implements GlobalFilter, Ordered {
         }
     }
 
-    private boolean isWhitelisted(String path) {
+    /**
+     * 检查路径是否在白名单中。
+     * 支持 METHOD:/path/** 格式限制 HTTP 方法。
+     * 如 GET:/api/v1/articles/** 只允许 GET 不鉴权。
+     */
+    private boolean isWhitelisted(String path, String method) {
         return whitelist.stream()
                 .map(String::trim)
-                .anyMatch(pattern -> pathMatcher.match(pattern, path));
+                .anyMatch(pattern -> {
+                    int colonIdx = pattern.indexOf(':');
+                    if (colonIdx > 0 && colonIdx < 8) {
+                        String requireMethod = pattern.substring(0, colonIdx);
+                        String pathPattern = pattern.substring(colonIdx + 1);
+                        return method.equalsIgnoreCase(requireMethod)
+                                && pathMatcher.match(pathPattern, path);
+                    }
+                    return pathMatcher.match(pattern, path);
+                });
     }
 
     private String extractToken(ServerHttpRequest request) {
