@@ -12,8 +12,11 @@ public class UserSocialLink extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
+    /** 用户ID */
     private Long userId;
+    /** 社交平台类型：github/blog/weibo/twitter */
     private String linkType;
+    /** 社交链接地址 */
     private String linkUrl;
 
 }

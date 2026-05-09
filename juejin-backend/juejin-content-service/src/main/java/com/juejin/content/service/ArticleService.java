@@ -135,4 +135,53 @@ public interface ArticleService extends IService<Article> {
      */
     PageResult<ArticleVO> searchArticles(String keyword, Integer page, Integer size);
 
+    // ==================== 草稿相关（合并到 article.status=0） ====================
+
+    /**
+     * 分页查询用户草稿列表
+     *
+     * @param userId 用户ID
+     * @param page   页码
+     * @param size   每页数量
+     * @return 草稿分页结果
+     */
+    PageResult<ArticleVO> getUserDrafts(Long userId, Integer page, Integer size);
+
+    /**
+     * 获取草稿详情（仅作者可查看）
+     *
+     * @param userId  用户ID
+     * @param draftId 草稿ID
+     * @return 草稿VO
+     */
+    ArticleVO getDraftById(Long userId, Long draftId);
+
+    /**
+     * 创建草稿（article.status=0），标题/内容等均为可选
+     *
+     * @param dto    草稿内容（可选字段）
+     * @param userId 作者ID
+     * @return 草稿VO
+     */
+    ArticleVO createDraft(ArticleCreateDTO dto, Long userId);
+
+    /**
+     * 更新草稿（仅 status=0 的文章可更新为草稿）
+     *
+     * @param draftId 草稿ID
+     * @param dto     草稿内容
+     * @param userId  作者ID
+     * @return 草稿VO
+     */
+    ArticleVO updateDraft(Long draftId, ArticleUpdateDTO dto, Long userId);
+
+    /**
+     * 删除草稿（逻辑删除，仅作者可操作）
+     *
+     * @param draftId 草稿ID
+     * @param userId  作者ID
+     * @return 是否成功
+     */
+    boolean deleteDraft(Long draftId, Long userId);
+
 }

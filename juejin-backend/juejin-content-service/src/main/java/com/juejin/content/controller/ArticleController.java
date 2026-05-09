@@ -30,6 +30,55 @@ public class ArticleController {
 
     private final ArticleService articleService;
 
+    // ==================== 草稿管理（合并到 article.status=0） ====================
+
+    @Operation(summary = "获取草稿列表", description = "分页获取当前用户的草稿列表（article.status=0）")
+    @GetMapping("/drafts")
+    public Result<PageResult<ArticleVO>> getDraftList(
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页数量") @RequestParam(defaultValue = "10") Integer size) {
+        return Result.success(articleService.getUserDrafts(userId, page, size));
+    }
+
+    @Operation(summary = "获取草稿详情", description = "获取草稿的详细内容（仅作者可查看）")
+    @GetMapping("/drafts/{draftId}")
+    public Result<ArticleVO> getDraftById(
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId,
+            @Parameter(description = "草稿ID") @PathVariable Long draftId) {
+        return Result.success(articleService.getDraftById(userId, draftId));
+    }
+
+    @Operation(summary = "创建草稿", description = "新建草稿（article.status=0），标题/内容等均为可选")
+    @PostMapping("/drafts")
+    public Result<ArticleVO> createDraft(
+            @RequestBody ArticleCreateDTO dto,
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId) {
+        return Result.success(articleService.createDraft(dto, userId));
+    }
+
+    @Operation(summary = "更新草稿", description = "更新已有草稿（仅 status=0 的文章可操作）")
+    @PutMapping("/drafts/{draftId}")
+    public Result<ArticleVO> updateDraft(
+            @Parameter(description = "草稿ID") @PathVariable Long draftId,
+            @RequestBody ArticleUpdateDTO dto,
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId) {
+        return Result.success(articleService.updateDraft(draftId, dto, userId));
+    }
+
+    @Operation(summary = "删除草稿", description = "删除指定草稿（逻辑删除）")
+    @DeleteMapping("/drafts/{draftId}")
+    public Result<Boolean> deleteDraft(
+            @Parameter(description = "用户ID", hidden = true)
+            @RequestHeader("X-User-Id") Long userId,
+            @Parameter(description = "草稿ID") @PathVariable Long draftId) {
+        return Result.success(articleService.deleteDraft(draftId, userId));
+    }
+
     /**
      * 创建文章
      *

@@ -38,6 +38,10 @@
             <groupId>com.juejin</groupId>
             <artifactId>juejin-starter-swagger</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.juejin</groupId>
+            <artifactId>juejin-starter-minio</artifactId>
+        </dependency>
 
         <!-- Nacos -->
         <dependency>

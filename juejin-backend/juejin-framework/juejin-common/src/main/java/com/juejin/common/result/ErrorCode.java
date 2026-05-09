@@ -44,8 +44,6 @@ public enum ErrorCode {
     TAG_ALREADY_EXISTS(2005, "Tag name already exists"),
     CATEGORY_NOT_FOUND(2006, "Category not found"),
     CATEGORY_ALREADY_EXISTS(2007, "Category name already exists"),
-    DRAFT_NOT_FOUND(2008, "Draft not found"),
-    DRAFT_LIMIT_EXCEEDED(2009, "Up to 50 drafts"),
     ARTICLE_UNPUBLISHED(2010, "Article is not published"),
     ALREADY_PUBLISHED(2011, "Article is already published"),
 

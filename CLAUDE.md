@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**语言规则**: 全程使用中文回复，代码注释也必须使用中文。
+
+**文档同步规则（硬性）**: 每次需求变更、新增技术组件、业务逻辑变更，必须同步更新以下文档：
+1. `CLAUDE.md` — 项目架构/技术栈/新增模块/关键模式变更
+2. `create_tables.sql` — 所有数据库表结构变更（DDL + 初始化数据）
+3. 前端 `types/index.ts` — 接口类型变更
+4. 前端 `api/` — 新增/修改 API 模块
+5. 前端 `mock/data.ts` + `mock/handler.ts` — Mock 数据格式与真实接口保持一致
+
+**UI 设计**: 涉及 UI 布局变更时，应调用 `web-design` skill 生成设计稿。
+
 ## Project Overview
 
 A tech community platform (similar to juejin.im/稀土掘金) with a Spring Cloud Alibaba microservices backend and Vue 3 frontend. Features include article publishing, social interaction (likes/comments/favorites/pins), personalized feed, search, notifications, user growth system, and content moderation.
@@ -103,6 +114,20 @@ juejin-vue/src/
 ```
 
 **API代理**: Vite代理 `/api/v1` → `localhost:8080`（Gateway）
+
+**表单提交规范**: 所有表单提交和触发API调用的按钮都必须使用 `useSubmitLock` 进行节流控制，防止重复提交。请求进行中的按钮必须显示 loading 状态（`isSubmitting` ref）并禁用。
+
+```ts
+// composables/useSubmitLock.ts
+import { useSubmitLock } from '@/composables/useSubmitLock'
+const { isSubmitting, withLock } = useSubmitLock()
+async function handleSubmit() {
+  await withLock(async () => {
+    await someApiCall()
+  })
+}
+// 模板: :disabled="isSubmitting"
+```
 
 ### Starter dependency model
 

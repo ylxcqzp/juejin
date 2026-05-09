@@ -59,6 +59,9 @@
         
         <!-- Hutool -->
         <hutool.version>5.8.11</hutool.version>
+
+        <!-- MinIO -->
+        <minio.version>8.5.10</minio.version>
     </properties>
 
     <dependencyManagement>
@@ -170,6 +173,13 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- MinIO -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+
             <!-- Framework Starters -->
             <dependency>
                 <groupId>com.juejin</groupId>
@@ -194,6 +204,11 @@
             <dependency>
                 <groupId>com.juejin</groupId>
                 <artifactId>juejin-starter-swagger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.juejin</groupId>
+                <artifactId>juejin-starter-minio</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

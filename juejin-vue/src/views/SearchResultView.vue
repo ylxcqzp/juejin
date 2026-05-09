@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { searchArticles } from '@/api/articles'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 import type { ArticleVO } from '@/types'
 
 const route = useRoute()
@@ -10,7 +11,7 @@ const router = useRouter()
 const keyword = ref((route.query.q as string) || (route.query.keyword as string) || '')
 const searchInput = ref(keyword.value)
 const results = ref<ArticleVO[]>([])
-const loading = ref(false)
+const { isSubmitting: loading, withLock: withSearchLock } = useSubmitLock()
 const searched = ref(false)
 const page = ref(1)
 const total = ref(0)
@@ -39,19 +40,20 @@ function highlight(text: string): string {
 async function doSearch() {
   if (!searchInput.value.trim()) return
   keyword.value = searchInput.value.trim()
-  loading.value = true
   searched.value = true
   page.value = 1
   results.value = []
   router.replace({ query: { q: keyword.value } })
-  try {
-    const data = await searchArticles({ keyword: keyword.value, page: 1, size: 20 })
-    results.value = data.list
-    total.value = data.total
-  } catch (e: unknown) {
-    results.value = []
-    total.value = 0
-  } finally { loading.value = false }
+  await withSearchLock(async () => {
+    try {
+      const data = await searchArticles({ keyword: keyword.value, page: 1, size: 20 })
+      results.value = data.list
+      total.value = data.total
+    } catch (e: unknown) {
+      results.value = []
+      total.value = 0
+    }
+  })
 }
 
 function handleKeydown(e: KeyboardEvent) {

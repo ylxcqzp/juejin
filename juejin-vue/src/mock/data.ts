@@ -49,16 +49,16 @@ export const mockTagBriefs: TagBriefVO[] = mockTags.slice(0, 10).map(t => ({ id:
 // ---------- 分类 ----------
 // 首页左侧分类导航（仿掘金）
 export const mockCategories: CategoryVO[] = [
-  { id: 0, name: '综合', description: '', icon: '', articleCount: 128000 },
-  { id: 1, name: '前端', description: 'HTML/CSS/JS/Vue/React', icon: '', articleCount: 45000 },
-  { id: 2, name: '后端', description: 'Java/Go/Python/Node', icon: '', articleCount: 38000 },
-  { id: 3, name: 'AI', description: '人工智能/机器学习/深度学习', icon: '', articleCount: 22000 },
-  { id: 4, name: 'Android', description: 'Android开发', icon: '', articleCount: 18000 },
-  { id: 5, name: 'iOS', description: 'iOS/Swift开发', icon: '', articleCount: 12000 },
-  { id: 6, name: '人工智能', description: '大模型/CV/NLP', icon: '', articleCount: 25000 },
-  { id: 7, name: '开发工具', description: 'IDE/效率工具', icon: '', articleCount: 9000 },
-  { id: 8, name: '代码人生', description: '程序员生活/职场', icon: '', articleCount: 15000 },
-  { id: 9, name: '阅读', description: '读书笔记/书评推荐', icon: '', articleCount: 6000 },
+  { id: 0, name: '综合', description: '', icon: 'icon-code', articleCount: 128000 },
+  { id: 1, name: '前端', description: 'HTML/CSS/JS/Vue/React', icon: 'icon-code', articleCount: 45000 },
+  { id: 2, name: '后端', description: 'Java/Go/Python/Node', icon: 'icon-server', articleCount: 38000 },
+  { id: 3, name: 'AI', description: '人工智能/机器学习/深度学习', icon: 'icon-cpu', articleCount: 22000 },
+  { id: 4, name: 'Android', description: 'Android开发', icon: 'icon-mobile', articleCount: 18000 },
+  { id: 5, name: 'iOS', description: 'iOS/Swift开发', icon: 'icon-mobile', articleCount: 12000 },
+  { id: 6, name: '人工智能', description: '大模型/CV/NLP', icon: 'icon-cpu', articleCount: 25000 },
+  { id: 7, name: '开发工具', description: 'IDE/效率工具', icon: 'icon-tool', articleCount: 9000 },
+  { id: 8, name: '代码人生', description: '程序员生活/职场', icon: 'icon-coffee', articleCount: 15000 },
+  { id: 9, name: '阅读', description: '读书笔记/书评推荐', icon: 'icon-book', articleCount: 6000 },
 ]
 
 // Markdown 文章原文（Vite raw import）
@@ -274,6 +274,7 @@ export const mockUserProfile: UserProfileVO = {
   id: 1, nickname: '张三前端', avatar: '', bio: '高级前端工程师 | Vue/React/Node.js | 掘金优秀作者',
   backgroundImage: '', level: 5, points: 12860,
   followingCount: 128, followerCount: 3560, articleCount: 48, likeCount: 12500,
+  totalViewCount: 156000, title: '高级前端工程师',
   tags: [{ id: 1, name: 'Vue.js' }, { id: 2, name: 'React' }, { id: 4, name: 'TypeScript' }, { id: 7, name: 'Docker' }],
   socialLinks: [{ linkType: 'github', linkUrl: 'https://github.com/zhangsan' }, { linkType: 'blog', linkUrl: 'https://zhangsan.dev' }],
   privacy: { showFavorites: true, showFollowing: true, showFollowers: true, allowStrangerMessage: false, messagePushEnabled: true },

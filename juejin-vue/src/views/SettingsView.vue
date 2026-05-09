@@ -2,11 +2,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import { updateProfile, changePassword, updatePrivacySettings, getMyProfile, updateSocialLinks } from '@/api/users'
 import { useToast } from '@/composables/useToast'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 
 const toast = useToast()
 
 const activeSection = ref<'profile' | 'account' | 'privacy' | 'social'>('profile')
-const saving = ref(false)
+const { isSubmitting: saving, withLock: withSaveLock } = useSubmitLock()
 const saved = ref(false)
 
 // 资料表单
@@ -50,21 +51,21 @@ async function loadSettings() {
 }
 
 async function handleSaveProfile() {
-  ''
-  saving.value = true
   saved.value = false
-  try {
-    await updateProfile({
-      nickname: profileForm.nickname,
-      bio: profileForm.bio,
-      avatar: profileForm.avatar,
-      backgroundImage: profileForm.backgroundImage,
-    })
-    saved.value = true
-    setTimeout(() => { saved.value = false }, 2000)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '保存失败')
-  } finally { saving.value = false }
+  await withSaveLock(async () => {
+    try {
+      await updateProfile({
+        nickname: profileForm.nickname,
+        bio: profileForm.bio,
+        avatar: profileForm.avatar,
+        backgroundImage: profileForm.backgroundImage,
+      })
+      saved.value = true
+      setTimeout(() => { saved.value = false }, 2000)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '保存失败')
+    }
+  })
 }
 
 async function handleChangePassword() {
@@ -77,42 +78,42 @@ async function handleChangePassword() {
     passwordError.value = '密码至少6位'
     return
   }
-  saving.value = true
-  try {
-    await changePassword({ oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword })
-    passwordForm.oldPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
-    saved.value = true
-    setTimeout(() => { saved.value = false }, 2000)
-  } catch (e: any) {
-    passwordError.value = e.message || '修改失败'
-  }
-  finally { saving.value = false }
+  await withSaveLock(async () => {
+    try {
+      await changePassword({ oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword })
+      passwordForm.oldPassword = ''
+      passwordForm.newPassword = ''
+      passwordForm.confirmPassword = ''
+      saved.value = true
+      setTimeout(() => { saved.value = false }, 2000)
+    } catch (e: any) {
+      passwordError.value = e.message || '修改失败'
+    }
+  })
 }
 
 async function handleSavePrivacy() {
-  ''
-  saving.value = true
-  try {
-    await updatePrivacySettings(privacyForm)
-    saved.value = true
-    setTimeout(() => { saved.value = false }, 2000)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '保存失败')
-  } finally { saving.value = false }
+  await withSaveLock(async () => {
+    try {
+      await updatePrivacySettings(privacyForm)
+      saved.value = true
+      setTimeout(() => { saved.value = false }, 2000)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '保存失败')
+    }
+  })
 }
 
 async function handleSaveSocialLinks() {
-  ''
-  saving.value = true
-  try {
-    await updateSocialLinks(socialLinks.value)
-    saved.value = true
-    setTimeout(() => { saved.value = false }, 2000)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '保存失败')
-  } finally { saving.value = false }
+  await withSaveLock(async () => {
+    try {
+      await updateSocialLinks(socialLinks.value)
+      saved.value = true
+      setTimeout(() => { saved.value = false }, 2000)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '保存失败')
+    }
+  })
 }
 
 function addSocialLink() {

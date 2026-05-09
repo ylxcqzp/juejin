@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getDraftList, deleteDraft } from '@/api/drafts'
+import { getDraftList, deleteDraftArticle as deleteDraft } from '@/api/articles'
 import { useToast } from '@/composables/useToast'
-import type { DraftVO } from '@/api/drafts'
+import { useSubmitLock } from '@/composables/useSubmitLock'
+import type { ArticleVO } from '@/types'
 
 const router = useRouter()
 const toast = useToast()
 
-const drafts = ref<DraftVO[]>([])
+const drafts = ref<ArticleVO[]>([])
 const loading = ref(true)
 const total = ref(0)
+const { isSubmitting: deleting, withLock: withDeleteLock } = useSubmitLock()
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -30,20 +32,14 @@ async function loadDrafts() {
 
 async function handleDelete(draftId: number) {
   if (!window.confirm('确定删除这篇草稿？')) return
-  await deleteDraft(draftId)
-  drafts.value = drafts.value.filter(d => d.id !== draftId)
+  await withDeleteLock(async () => {
+    await deleteDraft(draftId)
+    drafts.value = drafts.value.filter(d => d.id !== draftId)
+  })
 }
 
-function handleEdit(draft: DraftVO) {
-  // 存储草稿数据到 localStorage，编辑器会读取
-  localStorage.setItem('editor_draft', JSON.stringify({
-    title: draft.title,
-    content: draft.content,
-    coverImage: draft.coverImage,
-    draftId: draft.id,
-    timestamp: Date.now(),
-  }))
-  router.push('/editor')
+function handleEdit(draft: ArticleVO) {
+  router.push(`/editor/${draft.id}`)
 }
 
 onMounted(loadDrafts)
@@ -85,7 +81,7 @@ onMounted(loadDrafts)
             <p class="text-xs text-text-secondary line-clamp-2 mb-2">
               {{ draft.content || '暂无内容' }}
             </p>
-            <span class="text-xs text-text-placeholder">{{ formatDate(draft.updateTime) }}</span>
+            <span class="text-xs text-text-placeholder">{{ formatDate(draft.createTime) }}</span>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
             <button
@@ -95,10 +91,11 @@ onMounted(loadDrafts)
               继续编辑
             </button>
             <button
-              class="px-3 py-1.5 text-xs text-text-secondary rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+              class="px-3 py-1.5 text-xs text-text-secondary rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="deleting"
               @click="handleDelete(draft.id)"
             >
-              删除
+              {{ deleting ? '删除中...' : '删除' }}
             </button>
           </div>
         </div>

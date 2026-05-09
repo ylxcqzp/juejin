@@ -38,8 +38,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     private final UserFeignClient userFeignClient;
     private final ContentFeignClient contentFeignClient;
 
-    /** 评论最大嵌套层数 */
-    private static final int MAX_DEPTH = 2;
+    /** root_id 继承机制天然支持无限层级盖楼，无需限制深度 */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -169,7 +168,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
         List<Comment> rootComments = pageParam.getRecords();
 
-        // 批量加载子回复（仅加载一级回复，最多2层嵌套）
+        // 批量加载所有子回复（通过 root_id 扁平化，前端盖楼展示）
         List<Long> rootIds = rootComments.stream()
                 .map(Comment::getId)
                 .collect(Collectors.toList());

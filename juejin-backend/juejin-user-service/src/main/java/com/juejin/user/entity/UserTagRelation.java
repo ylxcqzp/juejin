@@ -12,7 +12,9 @@ public class UserTagRelation extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
+    /** 用户ID */
     private Long userId;
+    /** 标签ID */
     private Long tagId;
 
 }

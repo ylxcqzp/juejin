@@ -2,6 +2,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,7 +15,7 @@ const form = reactive({
   password: '',
 })
 
-const loading = ref(false)
+const { isSubmitting: loading, withLock: withLoginLock } = useSubmitLock()
 const errorMsg = ref('')
 const redirectPath = computed(() => (route.query.redirect as string) || '/')
 
@@ -27,18 +28,16 @@ const isValid = computed(() => {
 
 async function handleLogin() {
   if (!isValid.value) return
-
-  loading.value = true
   errorMsg.value = ''
 
-  try {
-    await authStore.login(form.account, form.password, loginType.value)
-    router.push(redirectPath.value)
-  } catch (e: unknown) {
-    errorMsg.value = e instanceof Error ? e.message : '登录失败，请稍后重试'
-  } finally {
-    loading.value = false
-  }
+  await withLoginLock(async () => {
+    try {
+      await authStore.login(form.account, form.password, loginType.value)
+      router.push(redirectPath.value)
+    } catch (e: unknown) {
+      errorMsg.value = e instanceof Error ? e.message : '登录失败，请稍后重试'
+    }
+  })
 }
 </script>
 

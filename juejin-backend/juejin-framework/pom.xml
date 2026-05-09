@@ -22,6 +22,7 @@
         <module>juejin-starter-mq</module>
         <module>juejin-starter-security</module>
         <module>juejin-starter-swagger</module>
+        <module>juejin-starter-minio</module>
     </modules>
 
 </project>

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { getPinList, getHotTopics, createPin } from '@/api/pins'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 import type { PinVO, PinTopicVO } from '@/types'
 
 const authStore = useAuthStore()
@@ -18,7 +19,7 @@ const sortBy = ref<'latest' | 'hot'>('latest')
 // 发布沸点
 const showComposer = ref(false)
 const newPinContent = ref('')
-const publishing = ref(false)
+const { isSubmitting: publishing, withLock: withPublishLock } = useSubmitLock()
 
 async function loadPins(reset = false) {
   if (loading.value && !reset) return
@@ -48,17 +49,17 @@ function switchSort(s: 'latest' | 'hot') {
 }
 
 async function handlePublish() {
-  if (!newPinContent.value.trim() || publishing.value) return
-  publishing.value = true
-  try {
-    await createPin({ content: newPinContent.value })
-    newPinContent.value = ''
-    showComposer.value = false
-    loadPins(true)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '发布失败')
-  }
-  finally { publishing.value = false }
+  if (!newPinContent.value.trim()) return
+  await withPublishLock(async () => {
+    try {
+      await createPin({ content: newPinContent.value })
+      newPinContent.value = ''
+      showComposer.value = false
+      loadPins(true)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '发布失败')
+    }
+  })
 }
 
 function formatCount(n: number): string {

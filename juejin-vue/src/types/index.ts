@@ -65,6 +65,8 @@ export interface UserProfileVO {
   followerCount: number
   articleCount: number
   likeCount: number
+  totalViewCount: number
+  title: string
   tags: TagBriefVO[]
   socialLinks: SocialLinkVO[]
   privacy: PrivacyVO

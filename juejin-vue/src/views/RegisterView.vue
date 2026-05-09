@@ -3,6 +3,7 @@ import { reactive, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 import { useAuthStore } from '@/stores/auth'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -18,7 +19,7 @@ const form = reactive({
   agreeTerms: false,
 })
 
-const loading = ref(false)
+const { isSubmitting: loading, withLock: withRegisterLock } = useSubmitLock()
 const errorMsg = ref('')
 const successMsg = ref('')
 
@@ -51,41 +52,39 @@ const passwordMismatch = computed(() =>
 
 async function handleRegister() {
   if (!isValid.value) return
-
-  loading.value = true
   errorMsg.value = ''
 
-  try {
-    let res
-    if (step.value === 'email') {
-      res = await request.post('/users/register', {
-        email: form.email,
-        password: form.password,
-        nickname: form.nickname,
-      })
-    } else {
-      res = await request.post('/users/register/phone', {
-        phone: form.phone,
-        password: form.password,
-        nickname: form.nickname,
-      })
+  await withRegisterLock(async () => {
+    try {
+      let res
+      if (step.value === 'email') {
+        res = await request.post('/users/register', {
+          email: form.email,
+          password: form.password,
+          nickname: form.nickname,
+        })
+      } else {
+        res = await request.post('/users/register/phone', {
+          phone: form.phone,
+          password: form.password,
+          nickname: form.nickname,
+        })
+      }
+
+      if (res.data.code !== 200) {
+        errorMsg.value = res.data.message || '注册失败'
+        return
+      }
+
+      successMsg.value = '注册成功！正在为你跳转...'
+
+      const account = step.value === 'email' ? form.email : form.phone
+      await authStore.login(account, form.password, step.value)
+      router.push('/')
+    } catch (e: unknown) {
+      errorMsg.value = e instanceof Error ? e.message : '注册失败，请稍后重试'
     }
-
-    if (res.data.code !== 200) {
-      errorMsg.value = res.data.message || '注册失败'
-      return
-    }
-
-    successMsg.value = '注册成功！正在为你跳转...'
-
-    const account = step.value === 'email' ? form.email : form.phone
-    await authStore.login(account, form.password, step.value)
-    router.push('/')
-  } catch (e: unknown) {
-    errorMsg.value = e instanceof Error ? e.message : '注册失败，请稍后重试'
-  } finally {
-    loading.value = false
-  }
+  })
 }
 </script>
 

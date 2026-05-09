@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getNotifications, getUnreadCount, markAllRead } from '@/api/notifications'
 import { useToast } from '@/composables/useToast'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 import type { NotificationVO } from '@/types'
 
 const router = useRouter()
@@ -13,6 +14,8 @@ const unreadCount = ref(0)
 const total = ref(0)
 const loading = ref(true)
 const typeFilter = ref<string>('')
+
+const { isSubmitting: markingRead, withLock: withMarkReadLock } = useSubmitLock()
 
 const filters = [
   { key: '', label: '全部' },
@@ -39,9 +42,11 @@ async function loadNotifications() {
 }
 
 async function handleMarkAllRead() {
-  await markAllRead()
-  unreadCount.value = 0
-  notifications.value.forEach(n => { n.isRead = true })
+  await withMarkReadLock(async () => {
+    await markAllRead()
+    unreadCount.value = 0
+    notifications.value.forEach(n => { n.isRead = true })
+  })
 }
 
 function switchFilter(key: string) {
@@ -87,10 +92,11 @@ onMounted(loadNotifications)
       </div>
       <button
         v-if="unreadCount > 0"
-        class="text-xs text-brand hover:text-brand-dark transition-colors cursor-pointer"
+        class="text-xs text-brand hover:text-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        :disabled="markingRead"
         @click="handleMarkAllRead"
       >
-        全部已读
+        {{ markingRead ? '处理中...' : '全部已读' }}
       </button>
     </div>
 

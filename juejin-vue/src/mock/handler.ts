@@ -186,5 +186,10 @@ async function handleMock(url: string, method: string, params: any, body: any): 
   if (method === 'GET' && url.match(/^\/tasks\/type\/\w+$/)) return { code: 200, message: 'success', data: mockTasks }
   if (method === 'POST' && url.match(/^\/tasks\/\d+\/claim$/)) return { code: 200, message: 'success', data: { ...mockTasks[1], isClaimed: true } }
 
+  // ============ 文件上传 ============
+  if (method === 'POST' && url === '/uploads/images') {
+    return { code: 200, message: 'success', data: `https://picsum.photos/800/400?random=${Date.now()}` }
+  }
+
   return null
 }

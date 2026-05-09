@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter, onBeforeRouteLeave } from 'vue-router'
-import { createArticle, type ArticleCreateDTO } from '@/api/articles'
-import { saveDraft } from '@/api/drafts'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
+import { createArticle, createDraftArticle, updateDraftArticle, getArticle, type ArticleCreateDTO } from '@/api/articles'
 import { getAllCategories } from '@/api/categories'
 import { getAllTags } from '@/api/tags'
+import { uploadImage } from '@/api/uploads'
 import { useToast } from '@/composables/useToast'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 import { marked } from '@/utils/marked-setup'
 import type { CategoryVO, TagVO } from '@/types'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
+
+// 编辑模式：/editor/:id 时加载已有文章
+const articleId = route.params.id ? Number(route.params.id) : null
+const isEditMode = ref(!!articleId)
 
 // 表单状态
 const title = ref('')
@@ -20,11 +26,15 @@ const summary = ref('')
 const selectedCategoryId = ref<number | undefined>()
 const selectedTagIds = ref<number[]>([])
 const isOriginal = ref(1)  // 0=转载 1=原创
-const publishing = ref(false)
-const saving = ref(false)
+const { isSubmitting: publishing, withLock: withPublishLock } = useSubmitLock()
+const { isSubmitting: saving, withLock: withSaveLock } = useSubmitLock()
 const publishSuccess = ref(false)
 
 // 表单校验
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
+
 const validationErrors = ref<string[]>([])
 function validateForm(): boolean {
   const errors: string[] = []
@@ -74,8 +84,35 @@ watch([title, content, coverImage], () => {
   if (isDirty.value) triggerAutoSave()
 })
 
-// 恢复草稿
+// 加载分类/标签，编辑模式下加载文章
 onMounted(async () => {
+  try {
+    const [cats, tgs] = await Promise.all([getAllCategories(), getAllTags()])
+    categories.value = cats
+    tags.value = tgs
+  } catch {
+    toast.error('分类/标签加载失败，请刷新页面重试')
+  }
+
+  // 编辑模式：加载已有文章内容
+  if (articleId) {
+    try {
+      const article = await getArticle(articleId)
+      title.value = article.title || ''
+      content.value = article.content || ''
+      coverImage.value = article.coverImage || ''
+      selectedCategoryId.value = article.categoryId
+      if (article.tags) selectedTagIds.value = article.tags.map(t => t.id)
+      isOriginal.value = article.isOriginal ? 1 : 0
+      isEditMode.value = true
+    } catch {
+      toast.error('文章加载失败')
+      router.push('/editor')
+    }
+    return
+  }
+
+  // 新建模式：恢复本地草稿
   const saved = localStorage.getItem('editor_draft')
   if (saved) {
     try {
@@ -87,13 +124,6 @@ onMounted(async () => {
       }
     } catch { /* ignore */ }
   }
-  try {
-    const [cats, tgs] = await Promise.all([getAllCategories(), getAllTags()])
-    categories.value = cats
-    tags.value = tgs
-  } catch {
-	    toast.error('分类/标签加载失败，请刷新页面重试')
-	  }
 })
 
 onUnmounted(() => clearTimeout(autoSaveTimer!))
@@ -117,52 +147,136 @@ function toggleTag(tagId: number) {
   else if (selectedTagIds.value.length < 5) selectedTagIds.value.push(tagId)
 }
 
+// 在光标位置插入文本
+function insertAtCursor(text: string) {
+  const textarea = textareaRef.value
+  if (!textarea) return
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const before = content.value.substring(0, start)
+  const after = content.value.substring(end)
+  content.value = before + text + after
+  nextTick(() => {
+    textarea.selectionStart = textarea.selectionEnd = start + text.length
+    textarea.focus()
+  })
+}
+
+// 上传图片并插入 Markdown
+async function uploadAndInsertImage(file: File) {
+  if (file.size > 10 * 1024 * 1024) {
+    toast.error('图片不能超过10MB')
+    return
+  }
+  uploading.value = true
+  try {
+    const url = await uploadImage(file)
+    const markdown = `![${file.name}](${url})`
+    insertAtCursor(markdown)
+    toast.success('图片已插入')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : '图片上传失败'
+    toast.error(msg)
+  } finally {
+    uploading.value = false
+  }
+}
+
+// 粘贴图片
+function handlePaste(e: ClipboardEvent) {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault()
+      const file = item.getAsFile()
+      if (file) uploadAndInsertImage(file)
+      break
+    }
+  }
+}
+
+// 拖拽图片
+function handleDrop(e: DragEvent) {
+  e.preventDefault()
+  const files = e.dataTransfer?.files
+  if (!files) return
+  for (const file of Array.from(files)) {
+    if (file.type.startsWith('image/')) {
+      uploadAndInsertImage(file)
+    }
+  }
+}
+
+// 文件选择器
+function triggerImagePicker() {
+  fileInputRef.value?.click()
+}
+
+function handleFileInputChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files) return
+  for (const file of Array.from(input.files)) {
+    if (file.type.startsWith('image/')) {
+      uploadAndInsertImage(file)
+    }
+  }
+  input.value = '' // 允许重复选择同一文件
+}
+
 // 发布文章
 async function handlePublish() {
   if (!validateForm()) {
     validationErrors.value.forEach(e => toast.error(e))
     return
   }
-  publishing.value = true
-  try {
-    const articleData: ArticleCreateDTO = {
-      title: title.value,
-      content: content.value,
-      contentHtml: previewHtml.value,
-      summary: summary.value || content.value.slice(0, 200),
-      coverImage: coverImage.value || undefined,
-      categoryId: selectedCategoryId.value,
-      tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-      isOriginal: isOriginal.value,
+  await withPublishLock(async () => {
+    try {
+      const articleData: ArticleCreateDTO = {
+        title: title.value,
+        content: content.value,
+        contentHtml: previewHtml.value,
+        summary: summary.value || content.value.slice(0, 200),
+        coverImage: coverImage.value || undefined,
+        categoryId: selectedCategoryId.value,
+        tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+        isOriginal: isOriginal.value,
+      }
+      const article = await createArticle(articleData)
+      localStorage.removeItem('editor_draft')
+      publishSuccess.value = true
+      setTimeout(() => router.push(`/article/${article.id}`), 800)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '发布失败，请稍后重试')
     }
-    const article = await createArticle(articleData)
-    localStorage.removeItem('editor_draft')
-    publishSuccess.value = true
-    setTimeout(() => router.push(`/article/${article.id}`), 800)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '发布失败，请稍后重试')
-  } finally { publishing.value = false }
+  })
 }
 
 // 保存草稿
 async function handleSaveDraft() {
-  saving.value = true
-  try {
-    await saveDraft({
-      title: title.value || undefined,
-      content: content.value || undefined,
-      coverImage: coverImage.value || undefined,
-      categoryId: selectedCategoryId.value,
-      tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
-    })
-    localStorage.removeItem('editor_draft')
-    isDirty.value = false
-    autoSaveStatus.value = 'saved'
-    toast.success('草稿已保存')
-    setTimeout(() => { autoSaveStatus.value = '' }, 2000)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '保存失败，请稍后重试')
-  } finally { saving.value = false }
+  await withSaveLock(async () => {
+    try {
+      const data = {
+        title: title.value || undefined,
+        content: content.value || undefined,
+        coverImage: coverImage.value || undefined,
+        categoryId: selectedCategoryId.value,
+        tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined,
+      }
+      if (articleId && isEditMode.value) {
+        await updateDraftArticle(articleId, data)
+      } else {
+        await createDraftArticle(data)
+      }
+      localStorage.removeItem('editor_draft')
+      isDirty.value = false
+      autoSaveStatus.value = 'saved'
+      toast.success('草稿已保存')
+      setTimeout(() => { autoSaveStatus.value = '' }, 2000)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : '保存失败，请稍后重试')
+    }
+  })
 }
 </script>
 
@@ -197,6 +311,31 @@ async function handleSaveDraft() {
             <option :value="undefined">选择分类</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
+
+          <!-- 图片上传按钮 -->
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            @change="handleFileInputChange"
+          />
+          <button
+            :disabled="uploading"
+            class="h-9 px-3 rounded-lg border border-gray-200 text-xs text-text-secondary
+                   hover:border-brand/30 transition-colors bg-white flex items-center gap-1.5
+                   disabled:opacity-50 disabled:cursor-not-allowed"
+            title="插入图片（支持 Ctrl+V 粘贴或拖拽）"
+            @click="triggerImagePicker"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+            <span>{{ uploading ? '上传中...' : '图片' }}</span>
+          </button>
 
           <!-- 标签选择 -->
           <div class="relative group">
@@ -276,17 +415,23 @@ async function handleSaveDraft() {
     <!-- 编辑/预览区 -->
     <div class="flex gap-4" style="height: calc(100vh - 240px)">
       <!-- 左侧编辑区 -->
-      <div class="flex-1 bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div
+        class="flex-1 bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden"
+        @drop.prevent="handleDrop"
+        @dragover.prevent
+      >
         <div class="flex items-center h-10 px-4 bg-gray-50 border-b border-gray-100">
           <span class="text-xs font-medium text-text-secondary tracking-wide">MARKDOWN</span>
         </div>
         <textarea
+          ref="textareaRef"
           v-model="content"
-          placeholder="开始写作... 支持 Markdown 语法"
+          placeholder="开始写作... 支持 Markdown 语法（支持 Ctrl+V 粘贴图片）"
           class="w-full p-5 text-sm text-text-primary leading-relaxed outline-none resize-none
                  placeholder:text-text-placeholder/60"
           :style="{ height: 'calc(100% - 40px)' }"
           spellcheck="false"
+          @paste="handlePaste"
         />
       </div>
 

@@ -6,6 +6,7 @@ import { getUserArticles } from '@/api/articles'
 import { getPinList } from '@/api/pins'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { useSubmitLock } from '@/composables/useSubmitLock'
 import type { UserProfileVO, ArticleVO, PinVO, FollowUserVO } from '@/types'
 
 const route = useRoute()
@@ -33,6 +34,8 @@ const articleTotal = ref(0)
 const pinPage = ref(1)
 const listLoading = ref(false)
 const listFinished = ref(false)
+
+const { isSubmitting: following, withLock: withFollowLock } = useSubmitLock()
 
 // 关注/粉丝弹窗
 const followModal = ref<'following' | 'followers' | null>(null)
@@ -90,17 +93,19 @@ watch(activeTab, resetAndLoad)
 
 async function handleFollow() {
   if (!authStore.isLoggedIn) { router.push({ name: 'login', query: { redirect: route.fullPath } }); return }
-  const wasFollowing = followStatus.value.isFollowing
-  followStatus.value.isFollowing = !wasFollowing
-  if (profile.value) profile.value.followerCount += wasFollowing ? -1 : 1
-  try {
-    if (wasFollowing) await unfollowUser(userId.value)
-    else await followUser(userId.value)
-  } catch (e: unknown) {
-    followStatus.value.isFollowing = wasFollowing
-    if (profile.value) profile.value.followerCount += wasFollowing ? 1 : -1
-    toast.error(e instanceof Error ? e.message : '操作失败')
-  }
+  await withFollowLock(async () => {
+    const wasFollowing = followStatus.value.isFollowing
+    followStatus.value.isFollowing = !wasFollowing
+    if (profile.value) profile.value.followerCount += wasFollowing ? -1 : 1
+    try {
+      if (wasFollowing) await unfollowUser(userId.value)
+      else await followUser(userId.value)
+    } catch (e: unknown) {
+      followStatus.value.isFollowing = wasFollowing
+      if (profile.value) profile.value.followerCount += wasFollowing ? 1 : -1
+      toast.error(e instanceof Error ? e.message : '操作失败')
+    }
+  })
 }
 
 async function openFollowModal(type: 'following' | 'followers') {
@@ -189,12 +194,17 @@ const tabs: { key: TabKey; label: string }[] = [
             <!-- 关注按钮 -->
             <button
               v-if="authStore.userId && authStore.userId !== userId"
-              class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer"
+              class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
               :class="followStatus.isFollowing
                 ? 'bg-gray-100 text-text-secondary hover:bg-gray-200'
                 : 'bg-brand text-white hover:bg-brand-dark'"
+              :disabled="following"
               @click="handleFollow"
             >
+              <svg v-if="following" class="animate-spin w-3.5 h-3.5 inline mr-1" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
               {{ followStatus.isFollowing ? '已关注' : '+ 关注' }}
             </button>
           </div>

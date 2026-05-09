@@ -584,4 +584,119 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         auditRecordMapper.insert(record);
     }
 
+    // ==================== 草稿相关实现（合并到 article.status=0） ====================
+
+    @Override
+    public PageResult<ArticleVO> getUserDrafts(Long userId, Integer page, Integer size) {
+        Page<Article> pageParam = new Page<>(page, size);
+        lambdaQuery()
+                .eq(Article::getAuthorId, userId)
+                .eq(Article::getStatus, 0)
+                .orderByDesc(Article::getUpdateTime)
+                .page(pageParam);
+
+        List<ArticleVO> records = pageParam.getRecords().stream()
+                .map(this::convertToVO)
+                .collect(Collectors.toList());
+        return PageResult.of(records, pageParam.getTotal(), (int) pageParam.getCurrent(), (int) pageParam.getSize());
+    }
+
+    @Override
+    public ArticleVO getDraftById(Long userId, Long draftId) {
+        Article article = getById(draftId);
+        if (article == null || !article.getAuthorId().equals(userId) || article.getStatus() != 0) {
+            throw new BusinessException(ErrorCode.ARTICLE_NOT_FOUND);
+        }
+        return convertToVO(article);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ArticleVO createDraft(ArticleCreateDTO dto, Long userId) {
+        Article article = new Article();
+        article.setAuthorId(userId);
+        article.setTitle(dto.getTitle());
+        article.setContent(dto.getContent());
+        if (dto.getContent() != null) {
+            article.setSummary(generateSummary(dto.getContent()));
+        }
+        article.setCoverImage(dto.getCoverImage());
+        article.setCategoryId(dto.getCategoryId());
+        article.setStatus(0); // 草稿
+        article.setViewCount(0);
+        article.setLikeCount(0);
+        article.setCommentCount(0);
+        article.setFavoriteCount(0);
+        article.setShareCount(0);
+        article.setIsTop(0);
+        article.setIsEssence(0);
+        article.setIsOriginal(dto.getIsOriginal() != null ? dto.getIsOriginal() : 1);
+        article.setSourceUrl(dto.getSourceUrl());
+        article.setCopyright(1);
+        article.setVersion(1);
+
+        save(article);
+
+        // 处理标签关联
+        if (dto.getTagIds() != null && !dto.getTagIds().isEmpty()) {
+            saveArticleTags(article.getId(), dto.getTagIds());
+        }
+
+        log.info("Draft created: userId={}, draftId={}", userId, article.getId());
+        return convertToVO(article);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ArticleVO updateDraft(Long draftId, ArticleUpdateDTO dto, Long userId) {
+        Article article = getById(draftId);
+        if (article == null || !article.getAuthorId().equals(userId) || article.getStatus() != 0) {
+            throw new BusinessException(ErrorCode.ARTICLE_NOT_FOUND);
+        }
+
+        // 只更新提供的字段
+        if (dto.getTitle() != null) article.setTitle(dto.getTitle());
+        if (dto.getContent() != null) {
+            article.setContent(dto.getContent());
+            article.setSummary(generateSummary(dto.getContent()));
+        }
+        if (dto.getCoverImage() != null) article.setCoverImage(dto.getCoverImage());
+        if (dto.getCategoryId() != null) article.setCategoryId(dto.getCategoryId());
+        if (dto.getIsOriginal() != null) article.setIsOriginal(dto.getIsOriginal());
+        if (dto.getSourceUrl() != null) article.setSourceUrl(dto.getSourceUrl());
+
+        updateById(article);
+
+        // 处理标签关联（全量替换）
+        if (dto.getTagIds() != null) {
+            deleteArticleTags(article.getId());
+            if (!dto.getTagIds().isEmpty()) {
+                saveArticleTags(article.getId(), dto.getTagIds());
+            }
+        }
+
+        log.info("Draft updated: userId={}, draftId={}", userId, draftId);
+        return convertToVO(article);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteDraft(Long draftId, Long userId) {
+        Article article = getById(draftId);
+        if (article == null || !article.getAuthorId().equals(userId) || article.getStatus() != 0) {
+            throw new BusinessException(ErrorCode.ARTICLE_NOT_FOUND);
+        }
+
+        removeById(draftId);
+
+        // 删除标签关联
+        deleteArticleTags(draftId);
+
+        // 清除缓存
+        redisTemplate.delete(RedisKey.ARTICLE_DETAIL + draftId);
+
+        log.info("Draft deleted: userId={}, draftId={}", userId, draftId);
+        return true;
+    }
+
 }

@@ -23,7 +23,7 @@ spring:
         - id: content-service
           uri: lb://juejin-content-service
           predicates:
-            - Path=/api/v1/articles/**,/api/v1/tags/**,/api/v1/categories/**,/api/v1/columns/**,/api/v1/drafts/**
+            - Path=/api/v1/articles/**,/api/v1/tags/**,/api/v1/categories/**,/api/v1/columns/**,/api/v1/articles/drafts/**
           filters:
             - StripPrefix=0
             

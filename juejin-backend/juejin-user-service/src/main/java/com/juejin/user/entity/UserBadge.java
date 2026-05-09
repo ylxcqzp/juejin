@@ -14,8 +14,11 @@ public class UserBadge extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
+    /** 用户ID */
     private Long userId;
+    /** 徽章ID */
     private Long badgeId;
+    /** 获得时间 */
     private LocalDateTime obtainTime;
 
 }
