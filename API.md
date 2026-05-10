@@ -78,6 +78,12 @@ Authorization: Bearer <accessToken>
 | 3003 | 评论不存在 |
 | 3006 | 收藏夹不存在 |
 | 3010 | 无删除权限 |
+| 3012 | 会话不存在 |
+| 3013 | 消息不存在 |
+| 3014 | 消息仅2分钟内可撤回 |
+| 3015 | 只能撤回自己的消息 |
+| 3016 | 已被对方拉黑 |
+| 3017 | 对方不允许陌生人私信 |
 | 4001 | 今日已签到 |
 | 4002 | 任务不存在 |
 
@@ -812,7 +818,7 @@ POST /internal/articles/{articleId}/favorite/decrement
 
 ## 3. 社交服务（social-service）
 
-**路径前缀**: `/api/v1/likes`、`/api/v1/comments`、`/api/v1/favorites`、`/api/v1/pins`、`/api/v1/feed`、`/api/v1/notifications`
+**路径前缀**: `/api/v1/likes`、`/api/v1/comments`、`/api/v1/favorites`、`/api/v1/conversations`、`/api/v1/pins`、`/api/v1/feed`、`/api/v1/notifications`
 
 ### 3.1 点赞
 
@@ -990,7 +996,98 @@ GET /api/v1/favorites/status?articleId=1
 
 ---
 
-### 3.4 沸点
+### 3.4 私信
+
+**路径前缀**: `/api/v1/conversations`
+
+#### 获取会话列表
+
+```
+GET /api/v1/conversations?page=1&size=20
+```
+
+**请求头**: `X-User-Id` (必填)
+
+**响应**:
+```json
+{
+  "code": 200,
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "otherUserId": 1002,
+        "otherUserNickname": "李四",
+        "otherUserAvatar": "",
+        "lastMessage": "感谢你的建议",
+        "lastMessageTime": "2026-05-10T10:30:00",
+        "unreadCount": 2
+      }
+    ],
+    "total": 1, "page": 1, "size": 20
+  }
+}
+```
+
+#### 获取或创建会话
+
+```
+POST /api/v1/conversations?otherUserId=1002
+```
+
+**请求头**: `X-User-Id` (必填)
+
+**响应**: `{ "code": 200, "data": { ...会话对象 } }`
+
+#### 获取会话消息
+
+```
+GET /api/v1/conversations/{conversationId}/messages?page=1&size=100
+```
+
+**请求头**: `X-User-Id` (必填)
+
+**响应**: `{ "code": 200, "data": { "list": [...消息列表], "total": 4, "page": 1, "size": 100 } }`
+
+#### 发送消息
+
+```
+POST /api/v1/conversations/{conversationId}/messages
+```
+
+**请求头**: `X-User-Id` (必填)
+
+```json
+{
+  "receiverId": 1002,
+  "content": "你好，想请教一个问题",
+  "contentType": 1
+}
+```
+
+**错误码**: 3016-被拉黑, 3017-隐私限制
+
+#### 标记已读
+
+```
+PUT /api/v1/conversations/{conversationId}/read
+```
+
+**请求头**: `X-User-Id` (必填)
+
+#### 撤回消息
+
+```
+PUT /api/v1/conversations/{conversationId}/messages/{messageId}/recall
+```
+
+**请求头**: `X-User-Id` (必填)
+
+**错误码**: 3014-超过2分钟, 3015-非本人消息
+
+---
+
+### 3.5 沸点
 
 #### 发布沸点
 

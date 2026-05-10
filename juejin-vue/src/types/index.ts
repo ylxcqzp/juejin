@@ -281,6 +281,31 @@ export interface FavoriteRecordVO {
   favoriteTime: string
 }
 
+// 私信会话
+export interface ConversationVO {
+  id: number
+  otherUserId: number
+  otherUserNickname: string
+  otherUserAvatar: string
+  lastMessage: string
+  lastMessageTime: string
+  unreadCount: number
+}
+
+// 私信消息
+export interface MessageVO {
+  id: number
+  conversationId: number
+  senderId: number
+  senderNickname: string
+  senderAvatar: string
+  content: string
+  contentType: number  // 1-文本 2-图片
+  isRead: boolean
+  isRecalled: boolean
+  createTime: string
+}
+
 // 分页参数
 export interface PageParam {
   page: number

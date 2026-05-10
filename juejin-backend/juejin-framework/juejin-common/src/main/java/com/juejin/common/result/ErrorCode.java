@@ -59,6 +59,12 @@ public enum ErrorCode {
     CANNOT_DELETE_DEFAULT_FOLDER(3009, "Cannot delete the default folder"),
     NO_DELETE_PERMISSION(3010, "No permission to delete"),
     NOT_SUPPORTED(3011, "Operation not supported"),
+    CONVERSATION_NOT_FOUND(3012, "Conversation not found"),
+    MESSAGE_NOT_FOUND(3013, "Message not found"),
+    RECALL_TIMEOUT(3014, "Messages can only be recalled within 2 minutes"),
+    NOT_MESSAGE_SENDER(3015, "You can only recall your own messages"),
+    BLOCKED_BY_USER(3016, "You have been blocked by this user"),
+    PRIVACY_NO_MESSAGE(3017, "This user does not accept private messages from strangers"),
 
     // Operation Service Error Codes (4000-4999)
     ALREADY_SIGNED(4001, "Already signed in today"),

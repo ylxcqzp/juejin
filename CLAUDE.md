@@ -11,6 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. 前端 `api/` — 新增/修改 API 模块
 5. 前端 `mock/data.ts` + `mock/handler.ts` — Mock 数据格式与真实接口保持一致
 
+**需求变更流程（硬性）**: 每次接到新需求：
+1. 先查阅 `需求文档.md` 确认是否已有描述
+2. 新增或修改需求 → 同步更新 `需求文档.md` 对应章节
+3. 涉及新表/新字段 → 同步修改 `create_tables.sql` + `数据库设计文档.md`
+
 **UI 设计**: 涉及 UI 布局变更时，应调用 `web-design` skill 生成设计稿。
 
 ## Project Overview
@@ -67,7 +72,7 @@ juejin-backend/
 ├── juejin-gateway/                  # Spring Cloud Gateway (port 8080) — routing, AuthFilter, CORS, Sentinel
 ├── juejin-user-service/             # User registration/login/profile/follow/badges (port 8081)
 ├── juejin-content-service/          # Articles, tags, categories (port 8082)
-├── juejin-social-service/           # Likes, comments, favorites, pins, feed, notifications (port 8083)
+├── juejin-social-service/           # Likes, comments, favorites, pins, feed, notifications, conversations/messages (port 8083)
 └── juejin-operation-service/        # Sign-in, tasks (port 8084)
 ```
 
@@ -153,7 +158,7 @@ Example service dependency set:
 |-------|---------------|-------|
 | `/api/v1/users/**`, `/api/v1/auth/**` | `juejin-user-service` | |
 | `/api/v1/articles/**`, `/api/v1/tags/**`, `/api/v1/categories/**` | `juejin-content-service` | Article write ops require JWT |
-| `/api/v1/likes/**`, `/api/v1/comments/**`, `/api/v1/favorites/**`, `/api/v1/pins/**`, `/api/v1/feed/**` | `juejin-social-service` | |
+| `/api/v1/likes/**`, `/api/v1/comments/**`, `/api/v1/favorites/**`, `/api/v1/pins/**`, `/api/v1/feed/**`, `/api/v1/conversations/**` | `juejin-social-service` | 私信功能在 social-service 中 |
 | `/api/v1/signs/**`, `/api/v1/tasks/**`, `/api/v1/uploads/**`, `/api/v1/search/**` | `juejin-operation-service` | |
 
 ### Auth flow
@@ -257,5 +262,5 @@ Configured via `jwt.secret`, `jwt.expiration`, `jwt.refresh-expiration` in appli
 - Gateway Sentinel requires `spring-cloud-alibaba-sentinel-gateway` dependency (not just `spring-cloud-starter-alibaba-sentinel`)
 - `BaseEntity` fields `creator` and `updater` are annotated for auto-fill but the handler does not populate them — they remain null
 - `ArticleServiceImpl.convertToVO` calls `categoryMapper.selectById` per-article (N+1 query), fine for detail pages but batch list endpoints may need optimization
-- social-service and operation-service are fully implemented (May 2026) — 6 controllers + 2 controllers respectively
+- social-service and operation-service are fully implemented (May 2026) — 8 controllers + 2 controllers respectively（含私信 Conversation/Message 控制器）
 - Frontend EditorView chunk is large (~960KB) due to highlight.js — consider dynamic import if load time becomes an issue

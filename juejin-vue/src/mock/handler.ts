@@ -9,6 +9,7 @@ import {
   mockFeeds, mockNotifications, mockFollowing, mockFollowers,
   mockFollowStatus, mockUserProfile, mockBadges,
   mockFavoriteFolders, mockFavoriteRecords,
+  mockConversations, mockMessages,
   mockPoints, mockSign, mockTasks,
   mockTags, mockCategories,
   mockUsers, mockCurrentUser, mockLoginVO,
@@ -190,6 +191,25 @@ async function handleMock(url: string, method: string, params: any, body: any): 
   if (method === 'POST' && url === '/uploads/images') {
     return { code: 200, message: 'success', data: `https://picsum.photos/800/400?random=${Date.now()}` }
   }
+
+  // ============ 私信 ============
+  if (method === 'GET' && url === '/conversations') return { code: 200, message: 'success', data: wrapPage(mockConversations, page, size) }
+  if (method === 'POST' && url === '/conversations') {
+    const otherUserId = Number(params?.otherUserId)
+    const user = mockUsers.find(u => u.id === otherUserId)
+    const conv = { id: Date.now(), otherUserId, otherUserNickname: user?.nickname || '未知用户', otherUserAvatar: '', lastMessage: '', lastMessageTime: new Date().toISOString(), unreadCount: 0 }
+    return { code: 200, message: 'success', data: conv }
+  }
+  if (method === 'GET' && url.match(/^\/conversations\/\d+\/messages$/)) {
+    const convId = Number(url.split('/')[2])
+    return { code: 200, message: 'success', data: wrapPage(mockMessages.filter(m => m.conversationId === convId), page, size * 10) }
+  }
+  if (method === 'POST' && url.match(/^\/conversations\/\d+\/messages$/)) {
+    const newMsg = { id: Date.now(), conversationId: Number(url.split('/')[2]), senderId: 1, senderNickname: '张三前端', senderAvatar: '', content: body?.content || '', contentType: 1, isRead: false, isRecalled: false, createTime: new Date().toISOString() }
+    return { code: 200, message: 'success', data: newMsg }
+  }
+  if (method === 'PUT' && url.match(/^\/conversations\/\d+\/read$/)) return { code: 200, message: 'success' }
+  if (method === 'PUT' && url.match(/^\/conversations\/\d+\/messages\/\d+\/recall$/)) return { code: 200, message: 'success' }
 
   return null
 }

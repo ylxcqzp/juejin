@@ -8,7 +8,7 @@ import type {
   FeedVO, NotificationVO, TagVO, CategoryVO, TagBriefVO,
   FollowUserVO, FollowStatusVO, BadgeVO,
   FavoriteFolderVO, FavoriteRecordVO, SignVO, TaskVO, PointsVO,
-  LoginVO, PageResult,
+  LoginVO, PageResult, ConversationVO, MessageVO,
 } from '@/types'
 
 // ---------- 用户 ----------
@@ -337,6 +337,23 @@ export const mockAuthorRanking = [
 ]
 
 // 辅助：创建分页结果
+// ========================================================================
+
+// ---------- 私信 ----------
+export const mockConversations: ConversationVO[] = [
+  { id: 1, otherUserId: 2, otherUserNickname: '李四全栈', otherUserAvatar: '', lastMessage: '感谢你的建议，我已经试过了效果很好！', lastMessageTime: '2026-05-10T10:30:00', unreadCount: 2 },
+  { id: 2, otherUserId: 3, otherUserNickname: '王五AI', otherUserAvatar: '', lastMessage: '你那篇LoRA的文章写得真好，想请教几个问题', lastMessageTime: '2026-05-09T14:00:00', unreadCount: 0 },
+  { id: 3, otherUserId: 4, otherUserNickname: '赵六后端', otherUserAvatar: '', lastMessage: '好的，那下周二约个时间线上交流', lastMessageTime: '2026-04-28T09:15:00', unreadCount: 0 },
+]
+
+export const mockMessages: MessageVO[] = [
+  { id: 1, conversationId: 1, senderId: 2, senderNickname: '李四全栈', senderAvatar: '', content: '你好，看了你的Vue3文章，想请教一个问题', contentType: 1, isRead: true, isRecalled: false, createTime: '2026-05-09T09:00:00' },
+  { id: 2, conversationId: 1, senderId: 1, senderNickname: '张三前端', senderAvatar: '', content: '当然可以，什么问题？', contentType: 1, isRead: true, isRecalled: false, createTime: '2026-05-09T09:30:00' },
+  { id: 3, conversationId: 1, senderId: 2, senderNickname: '李四全栈', senderAvatar: '', content: '关于watchEffect的用法，我有些疑问', contentType: 1, isRead: true, isRecalled: false, createTime: '2026-05-10T10:00:00' },
+  { id: 4, conversationId: 1, senderId: 1, senderNickname: '张三前端', senderAvatar: '', content: '感谢你的建议，我已经试过了效果很好！', contentType: 1, isRead: false, isRecalled: false, createTime: '2026-05-10T10:30:00' },
+  { id: 5, conversationId: 2, senderId: 3, senderNickname: '王五AI', senderAvatar: '', content: '你那篇LoRA的文章写得真好，想请教几个问题', contentType: 1, isRead: true, isRecalled: false, createTime: '2026-05-09T14:00:00' },
+]
+
 // ========================================================================
 
 export function wrapPage<T>(list: T[], page = 1, size = 10): PageResult<T> {

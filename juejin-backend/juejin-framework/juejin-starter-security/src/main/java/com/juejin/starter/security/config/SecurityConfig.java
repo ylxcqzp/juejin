@@ -8,10 +8,11 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,6 +39,15 @@ public class SecurityConfig {
                 .filter(s -> !s.isEmpty())
                 .toList();
         return new JwtAuthenticationFilter(paths);
+    }
+
+    /**
+     * 提供一个空的 UserDetailsService，阻止 Spring Boot 自动生成默认密码。
+     * 本服务使用 JWT 无状态认证，不走表单登录/内存用户。
+     */
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return new InMemoryUserDetailsManager();
     }
 
     @Bean

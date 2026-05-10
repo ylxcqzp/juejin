@@ -81,6 +81,18 @@ const router = createRouter({
       name: 'category',
       component: () => import('@/views/CategoryView.vue'),
     },
+    {
+      path: '/messages',
+      name: 'messages',
+      component: () => import('@/views/MessagesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/messages/:id',
+      name: 'messages-conversation',
+      component: () => import('@/views/MessagesView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 

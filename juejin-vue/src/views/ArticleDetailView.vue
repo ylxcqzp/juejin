@@ -27,6 +27,33 @@ const error = ref('')
 interface TocItem { id: string; text: string; level: number }
 const tocItems = ref<TocItem[]>([])
 const activeTocId = ref('')
+const tocCollapsed = ref(false)
+const tocListRef = ref<HTMLElement | null>(null)
+
+// 手风琴动画函数
+function onAccordionEnter(el: Element) {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.height = '0'
+  htmlEl.style.overflow = 'hidden'
+  requestAnimationFrame(() => {
+    htmlEl.style.transition = 'height 0.3s ease-in-out'
+    htmlEl.style.height = htmlEl.scrollHeight + 'px'
+  })
+}
+function onAccordionAfterEnter(el: Element) {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.height = ''
+  htmlEl.style.overflow = ''
+}
+function onAccordionLeave(el: Element) {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.height = htmlEl.scrollHeight + 'px'
+  htmlEl.style.overflow = 'hidden'
+  requestAnimationFrame(() => {
+    htmlEl.style.transition = 'height 0.3s ease-in-out'
+    htmlEl.style.height = '0'
+  })
+}
 
 // 评论区
 const comments = ref<CommentVO[]>([])
@@ -92,15 +119,38 @@ async function loadArticle() {
   }
 }
 
-// 生成目录
-function generateToc(html: string) {
+// 生成目录（解析 HTML 标题和 Markdown 标题）
+function generateToc(source: string) {
   const items: TocItem[] = []
-  const regex = /<h([1-3])\s+id="([^"]*)"[^>]*>(.*?)<\/h[1-3]>/gi
+  // 尝试 HTML 标题（带或不带 id 属性）
+  const htmlRegex = /<h([1-3])(?:\s+id="([^"]*)")?[^>]*>(.*?)<\/h[1-3]>/gi
   let match
-  while ((match = regex.exec(html)) !== null) {
-    items.push({ level: Number(match[1]), id: match[2], text: match[3].replace(/<[^>]+>/g, '') })
+  while ((match = htmlRegex.exec(source)) !== null) {
+    const level = Number(match[1])
+    const text = match[3].replace(/<[^>]+>/g, '').trim()
+    const id = match[2] || slugify(text)
+    if (text) items.push({ level, id, text })
+  }
+  // 如果没有匹配到 HTML 标题，尝试 Markdown 标题（# ## ###）
+  if (items.length === 0) {
+    const mdRegex = /^(#{1,3})\s+(.+)$/gm
+    while ((match = mdRegex.exec(source)) !== null) {
+      const level = match[1].length
+      const text = match[2].trim()
+      items.push({ level, id: slugify(text), text })
+    }
   }
   tocItems.value = items
+}
+
+// 从文本生成 URL 友好的 slug
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9一-鿿-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 // 加载作者
@@ -163,6 +213,12 @@ async function handleFollow() {
       toast.error('操作失败')
     }
   })
+}
+
+// 私信
+function handleMessage() {
+  if (!authStore.isLoggedIn) { redirectLogin(); return }
+  router.push({ name: 'messages', query: { userId: String(article.value!.authorId) } })
 }
 
 // 加载评论
@@ -234,15 +290,29 @@ function formatTime(d: string): string {
 
 // 滚动监听高亮目录
 function onContentScroll() {
-  const headings = document.querySelectorAll('.article-content h1[id], .article-content h2[id], .article-content h3[id]')
+  const headings = document.querySelectorAll('.article-content h1, .article-content h2, .article-content h3')
   let current = ''
-  headings.forEach(h => { if ((h as HTMLElement).getBoundingClientRect().top < 120) current = h.id })
+  headings.forEach(h => {
+    const el = h as HTMLElement
+    if (el.getBoundingClientRect().top < 120) {
+      // 优先用 id，没有则从文本生成 slug 匹配
+      const id = el.id || slugify(el.textContent?.trim() || '')
+      if (id) current = id
+    }
+  })
   if (current) activeTocId.value = current
 }
 
-// 目录点击滚动
+// 目录点击滚动（先按 id 查找，再按文本内容匹配）
 function scrollToHeading(id: string) {
-  const el = document.getElementById(id)
+  let el = document.getElementById(id)
+  if (!el) {
+    const item = tocItems.value.find(t => t.id === id)
+    if (item) {
+      const headings = document.querySelectorAll('.article-content h1, .article-content h2, .article-content h3')
+      headings.forEach(h => { if (h.textContent?.trim() === item.text && !el) el = h as HTMLElement })
+    }
+  }
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
@@ -277,78 +347,52 @@ onUnmounted(() => {
         <!-- ============================================================ -->
         <!-- 左侧动作栏 (sticky)                                            -->
         <!-- ============================================================ -->
-        <aside class="hidden md:flex flex-col items-center gap-1 pt-2 flex-shrink-0" style="width:3.5rem">
-          <div class="sticky top-20 flex flex-col items-center gap-4">
+        <aside class="hidden md:flex flex-col items-center flex-shrink-0" style="width:3.5rem">
+          <div class="sticky top-40 flex flex-col items-center gap-6">
             <!-- 点赞 -->
             <button
-              class="flex flex-col items-center gap-0.5 cursor-pointer group"
+              class="relative w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 group"
               :class="liking ? 'pointer-events-none opacity-50' : ''"
               @click="handleLike"
             >
-              <div
-                class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                :class="liked
-                  ? 'bg-brand/10 text-brand shadow-[0_0_0_3px_rgba(30,128,255,0.1)]'
-                  : 'bg-gray-50 text-text-secondary hover:bg-brand/5 hover:text-brand'"
-              >
-                <svg class="w-5 h-5" :fill="liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-                </svg>
-              </div>
-              <span class="text-xs text-text-secondary group-hover:text-brand transition-colors">{{ formatCount(article.likeCount) }}</span>
+              <svg class="w-5 h-5 transition-colors duration-200" :class="liked ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+              </svg>
+              <span v-if="article.likeCount > 0" class="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 bg-gray-300 text-white text-[10px] font-medium rounded-full flex items-center justify-center">{{ formatCount(article.likeCount) }}</span>
             </button>
 
             <!-- 评论 -->
-            <button class="flex flex-col items-center gap-0.5 cursor-pointer group" @click="scrollToComments">
-              <div class="w-10 h-10 rounded-full bg-gray-50 text-text-secondary flex items-center justify-center
-                          group-hover:bg-brand/5 group-hover:text-brand transition-all duration-200">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-              </div>
-              <span class="text-xs text-text-secondary group-hover:text-brand transition-colors">{{ formatCount(article.commentCount) }}</span>
+            <button class="relative w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 group" @click="scrollToComments">
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors duration-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span v-if="article.commentCount > 0" class="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 bg-gray-300 text-white text-[10px] font-medium rounded-full flex items-center justify-center">{{ formatCount(article.commentCount) }}</span>
             </button>
 
-            <!-- 关注 -->
+            <!-- 收藏 -->
             <button
-              v-if="article.authorId !== authStore.userId"
-              class="flex flex-col items-center gap-0.5 cursor-pointer group"
-              :disabled="following"
-              @click="handleFollow"
+              class="relative w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 group"
+              :class="favoriting ? 'pointer-events-none opacity-50' : ''"
+              @click="handleFavorite"
             >
-              <div
-                class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                :class="followStatus.isFollowing
-                  ? 'bg-brand/10 text-brand'
-                  : 'bg-gray-50 text-text-secondary group-hover:bg-brand/5 group-hover:text-brand'"
-              >
-                <svg class="w-5 h-5" :fill="followStatus.isFollowing ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
-                </svg>
-              </div>
-              <span class="text-xs text-text-secondary group-hover:text-brand transition-colors">{{ followStatus.isFollowing ? '已关注' : '关注' }}</span>
+              <svg class="w-5 h-5 transition-colors duration-200" :class="favorited ? 'text-yellow-500' : 'text-gray-400 group-hover:text-gray-600'" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span v-if="article.favoriteCount > 0" class="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 bg-gray-300 text-white text-[10px] font-medium rounded-full flex items-center justify-center">{{ formatCount(article.favoriteCount) }}</span>
             </button>
 
             <!-- 分享 -->
-            <button class="flex flex-col items-center gap-0.5 cursor-pointer group" @click="handleShare">
-              <div class="w-10 h-10 rounded-full bg-gray-50 text-text-secondary flex items-center justify-center
-                          group-hover:bg-brand/5 group-hover:text-brand transition-all duration-200">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
-                </svg>
-              </div>
-              <span class="text-xs text-text-secondary group-hover:text-brand transition-colors">分享</span>
+            <button class="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 group" @click="handleShare">
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors duration-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+              </svg>
             </button>
 
             <!-- 举报 -->
-            <button class="flex flex-col items-center gap-0.5 cursor-pointer group" @click="handleReport">
-              <div class="w-10 h-10 rounded-full bg-gray-50 text-text-secondary flex items-center justify-center
-                          group-hover:bg-red-50 group-hover:text-red-400 transition-all duration-200">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-              </div>
-              <span class="text-xs text-text-secondary group-hover:text-red-400 transition-colors">举报</span>
+            <button class="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 group" @click="handleReport">
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors duration-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+              </svg>
             </button>
           </div>
         </aside>
@@ -567,73 +611,113 @@ onUnmounted(() => {
         <!-- ============================================================ -->
         <!-- 右侧：作者卡片 + 目录                                            -->
         <!-- ============================================================ -->
-        <aside class="hidden lg:block w-64 flex-shrink-0">
-          <div class="sticky top-20 space-y-4">
-            <!-- 作者卡片 -->
-            <div v-if="authorProfile" class="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5">
-              <div class="flex items-center gap-3 mb-3 cursor-pointer" @click="$router.push(`/user/${article.authorId}`)">
-                <div class="w-11 h-11 rounded-full bg-gradient-to-br from-brand/30 to-brand-light/40 flex items-center justify-center text-sm font-bold text-brand flex-shrink-0">
+        <aside class="hidden lg:block w-72 flex-shrink-0">
+          <div class="sticky top-20 space-y-5">
+            <!-- 作者卡片（不依赖 authorProfile，使用 article 基本信息始终显示） -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <!-- 作者头部信息 -->
+              <div class="flex items-center gap-4 mb-4 cursor-pointer" @click="$router.push(`/user/${article.authorId}`)">
+                <div class="w-14 h-14 rounded-full bg-blue-500 flex items-center justify-center text-lg font-bold text-white shadow-md flex-shrink-0 ring-4 ring-blue-50">
                   {{ article.authorNickname?.charAt(0) || 'U' }}
                 </div>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <p class="text-sm font-semibold text-text-primary truncate">{{ article.authorNickname }}</p>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm/10 text-warm flex-shrink-0">Lv{{ authorProfile.level }}</span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <p class="text-base font-bold text-gray-900 truncate">{{ article.authorNickname }}</p>
+                    <span v-if="authorProfile" class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500 text-white flex-shrink-0">Lv.{{ authorProfile.level }}</span>
                   </div>
-                  <p class="text-xs text-text-secondary truncate mt-0.5">{{ (authorProfile as any).title || authorProfile.bio?.split('|')[0]?.trim() || '技术创作者' }}</p>
+                  <p class="text-sm text-gray-500 truncate">{{ (authorProfile as any)?.title || authorProfile?.bio?.split('|')[0]?.trim() || '技术创作者' }}</p>
                 </div>
               </div>
-              <div class="grid grid-cols-3 gap-2 py-3 border-y border-gray-50 mb-3">
+
+              <!-- 荣誉标签（如果有） -->
+              <div v-if="(authorProfile as any)?.badges?.length" class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
+                <span v-for="badge in (authorProfile as any)?.badges" :key="badge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                  {{ badge.icon }} {{ badge.text }}
+                </span>
+              </div>
+
+              <!-- 统计数据 -->
+              <div class="grid grid-cols-3 gap-4 mb-5">
                 <div class="text-center">
-                  <p class="text-sm font-bold text-text-primary">{{ formatCount(authorProfile.articleCount || 0) }}</p>
-                  <p class="text-[10px] text-text-placeholder mt-0.5">文章</p>
+                  <p class="text-xl font-semibold text-gray-900">{{ authorProfile ? formatCount(authorProfile.articleCount || 0) : '-' }}</p>
+                  <p class="text-xs text-gray-400 mt-1">文章</p>
+                </div>
+                <div class="text-center border-x border-gray-100">
+                  <p class="text-xl font-semibold text-gray-900">{{ authorProfile ? formatCount((authorProfile as any).totalViewCount || 0) : '-' }}</p>
+                  <p class="text-xs text-gray-400 mt-1">阅读</p>
                 </div>
                 <div class="text-center">
-                  <p class="text-sm font-bold text-text-primary">{{ formatCount((authorProfile as any).totalViewCount || 0) }}</p>
-                  <p class="text-[10px] text-text-placeholder mt-0.5">阅读</p>
-                </div>
-                <div class="text-center">
-                  <p class="text-sm font-bold text-text-primary">{{ formatCount(authorProfile.followerCount || 0) }}</p>
-                  <p class="text-[10px] text-text-placeholder mt-0.5">粉丝</p>
+                  <p class="text-xl font-semibold text-gray-900">{{ authorProfile ? formatCount(authorProfile.followerCount || 0) : '-' }}</p>
+                  <p class="text-xs text-gray-400 mt-1">粉丝</p>
                 </div>
               </div>
-              <div class="flex gap-2">
+
+              <!-- 操作按钮 -->
+              <div class="flex gap-3">
                 <button
                   v-if="article.authorId !== authStore.userId"
-                  class="flex-1 h-9 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer"
+                  class="flex-1 h-10 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer"
                   :class="followStatus.isFollowing
-                    ? 'bg-gray-100 text-text-secondary hover:bg-gray-200'
-                    : 'bg-brand text-white hover:bg-brand-dark'"
+                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'"
                   :disabled="following"
                   @click="handleFollow"
                 >{{ followStatus.isFollowing ? '已关注' : '关注' }}</button>
                 <button
                   v-if="article.authorId !== authStore.userId"
-                  class="flex-1 h-9 rounded-full border border-gray-200 text-xs font-medium text-text-secondary
-                         hover:bg-brand/5 hover:text-brand hover:border-brand/30 transition-all duration-200 cursor-pointer"
+                  class="flex-1 h-10 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 bg-white
+                         hover:border-blue-300 hover:text-blue-600 transition-colors duration-200 cursor-pointer"
+                  @click="handleMessage"
                 >私信</button>
               </div>
             </div>
 
             <!-- 目录 -->
-            <div v-if="tocItems.length" class="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5">
-              <h4 class="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">目录</h4>
-              <ul class="space-y-0.5 max-h-[50vh] overflow-y-auto">
-                <li v-for="item in tocItems" :key="item.id">
-                  <a
-                    :href="`#${item.id}`"
-                    class="block text-xs py-1.5 transition-all duration-200 truncate cursor-pointer
-                           border-l-2 hover:text-brand hover:border-brand/30"
-                    :class="[
-                      activeTocId === item.id
-                        ? 'text-brand font-medium border-brand'
-                        : 'text-text-secondary border-transparent',
-                      item.level === 2 ? 'pl-6' : item.level === 3 ? 'pl-9' : 'pl-3',
-                    ]"
-                    @click.prevent="scrollToHeading(item.id)"
-                  >{{ item.text }}</a>
-                </li>
-              </ul>
+            <div v-if="tocItems.length" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <!-- 目录标题栏 -->
+              <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50">
+                <h4 class="text-sm font-bold text-gray-800">目录</h4>
+                <button
+                  class="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors cursor-pointer font-medium"
+                  @click="tocCollapsed = !tocCollapsed"
+                >
+                  <span>{{ tocCollapsed ? '展开' : '收起' }}</span>
+                  <svg class="w-3.5 h-3.5 transition-transform duration-300" :class="{ 'rotate-180': !tocCollapsed }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="M5 15l7-7 7 7"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- 目录列表（手风琴效果） -->
+              <Transition
+                name="accordion"
+                @enter="onAccordionEnter"
+                @after-enter="onAccordionAfterEnter"
+                @leave="onAccordionLeave"
+              >
+                <ul v-show="!tocCollapsed" ref="tocListRef" class="py-3 max-h-[60vh] overflow-y-auto scrollbar-thin">
+                  <li v-for="item in tocItems" :key="item.id">
+                    <a
+                      :href="`#${item.id}`"
+                      class="block py-2.5 pr-4 transition-all duration-200 relative group"
+                      :class="[
+                        activeTocId === item.id
+                          ? 'text-blue-600 font-medium bg-blue-50/80'
+                          : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50',
+                        item.level === 2 ? 'pl-8' : item.level === 3 ? 'pl-12' : 'pl-5',
+                      ]"
+                      @click.prevent="scrollToHeading(item.id)"
+                    >
+                      <span
+                        class="absolute left-0 top-0 bottom-0 w-0.5 transition-all duration-300 rounded-full"
+                        :class="activeTocId === item.id ? 'bg-blue-600' : 'bg-transparent group-hover:bg-blue-300'"
+                        :style="{ left: item.level === 2 ? '1.75rem' : item.level === 3 ? '2.75rem' : '1.05rem' }"
+                      ></span>
+                      <span class="truncate block">{{ item.text }}</span>
+                    </a>
+                  </li>
+                </ul>
+              </Transition>
             </div>
           </div>
         </aside>
@@ -655,5 +739,30 @@ onUnmounted(() => {
 .article-content :deep(h2),
 .article-content :deep(h3) {
   scroll-margin-top: 5rem;
+}
+
+/* 自定义滚动条 */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 20px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* 目录项左侧指示器动画 */
+a > span:first-of-type {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 按钮点击反馈 */
+button:active:not(:disabled) {
+  transform: scale(0.95);
 }
 </style>
