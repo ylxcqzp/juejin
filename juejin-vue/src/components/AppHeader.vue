@@ -43,6 +43,28 @@ function handleLogout() {
   authStore.logout()
   router.push({ name: 'home' })
 }
+
+function goToUserProfile() {
+  showUserMenu.value = false
+  if (authStore.userId) {
+    router.push(`/user/${authStore.userId}`)
+  }
+}
+
+function goToSettings() {
+  showUserMenu.value = false
+  router.push('/settings')
+}
+
+/**
+ * 格式化数字，大于等于10000显示为xk
+ * @param n - 要格式化的数字
+ * @returns 格式化后的字符串
+ */
+function formatCount(n: number): string {
+  if (n >= 10000) return (n / 1000).toFixed(1) + 'k'
+  return String(n)
+}
 </script>
 
 <template>
@@ -131,21 +153,96 @@ function handleLogout() {
               />
             </button>
 
-            <!-- 下拉菜单（遮罩 + 面板） -->
+            <!-- 用户卡片弹框（遮罩 + 面板） -->
             <div v-if="showUserMenu">
               <div class="fixed inset-0 z-10" @click="showUserMenu = false" />
               <div
-                class="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
+                class="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-20 overflow-hidden"
               >
-                <router-link :to="`/user/${authStore.userId}`" class="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50" @click="showUserMenu = false">
-                  <UserAvatar :src="authStore.user?.avatar" :name="authStore.user?.nickname" size="sm" />
-                  <span>{{ authStore.user?.nickname }}</span>
-                </router-link>
-                <hr class="my-1 border-gray-100" />
-                <router-link to="/drafts" class="block px-4 py-2 text-sm text-text-secondary hover:bg-gray-50" @click="showUserMenu = false">草稿箱</router-link>
-                <router-link to="/settings" class="block px-4 py-2 text-sm text-text-secondary hover:bg-gray-50" @click="showUserMenu = false">设置</router-link>
-                <hr class="my-1 border-gray-100" />
-                <button class="w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-gray-50" @click="handleLogout">退出登录</button>
+                <!-- 顶部用户信息 -->
+                <div class="p-4">
+                  <div class="flex items-center gap-3">
+                    <UserAvatar
+                      :src="authStore.user?.avatar"
+                      :name="authStore.user?.nickname"
+                      size="md"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-text-primary truncate">{{ authStore.user?.nickname }}</p>
+                      <p class="text-xs text-text-secondary mt-0.5">
+                        矿石: {{ formatCount(authStore.user?.points || 0) }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- 等级进度条 -->
+                  <div class="mt-3">
+                    <div class="flex items-center justify-between text-xs mb-1">
+                      <span class="text-brand font-medium">掘友等级 JY.{{ authStore.user?.level || 1 }}</span>
+                      <span class="text-text-secondary">{{ authStore.user?.points || 0 }} / {{ ((authStore.user?.level || 1) * 500) }} ></span>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        class="h-full bg-brand rounded-full transition-all"
+                        :style="{ width: Math.min(((authStore.user?.points || 0) % 500) / 500 * 100, 100) + '%' }"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- 统计数据 -->
+                  <div class="flex items-center justify-around mt-4 pt-3 border-t border-gray-50">
+                    <div class="text-center">
+                      <p class="text-sm font-bold text-text-primary">{{ formatCount(authStore.user?.followingCount || 0) }}</p>
+                      <p class="text-xs text-text-secondary mt-0.5">关注</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-sm font-bold text-text-primary">{{ formatCount(authStore.user?.likeCount || 0) }}</p>
+                      <p class="text-xs text-text-secondary mt-0.5">赞过</p>
+                    </div>
+                    <div class="text-center">
+                      <p class="text-sm font-bold text-text-primary">{{ formatCount(authStore.user?.favoriteCount || 0) }}</p>
+                      <p class="text-xs text-text-secondary mt-0.5">收藏</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 功能入口：我的主页 + 我的设置 -->
+                <div class="px-4 pb-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-text-primary hover:bg-gray-50 transition-colors"
+                      @click="goToUserProfile"
+                    >
+                      <svg class="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      我的主页
+                    </button>
+                    <button
+                      class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-text-primary hover:bg-gray-50 transition-colors"
+                      @click="goToSettings"
+                    >
+                      <svg class="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      我的设置
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 底部：退出登录 -->
+                <div class="px-4 py-3 border-t border-gray-50">
+                  <button
+                    class="w-full text-left text-sm text-text-secondary hover:text-red-500 transition-colors flex items-center gap-2"
+                    @click="handleLogout"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    退出登录
+                  </button>
+                </div>
               </div>
             </div>
           </div>

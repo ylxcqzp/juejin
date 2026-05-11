@@ -268,6 +268,10 @@ export interface FavoriteFolderVO {
   description: string
   isPublic: boolean
   articleCount: number
+  subscriberCount: number
+  isDefault: boolean // 是否默认收藏集（不可删除）
+  createTime: string
+  updateTime: string
 }
 
 // 收藏记录
@@ -278,7 +282,12 @@ export interface FavoriteRecordVO {
   summary: string
   coverImage: string
   authorNickname: string
+  authorAvatar: string
   favoriteTime: string
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  tags?: TagBriefVO[]
 }
 
 // 私信会话

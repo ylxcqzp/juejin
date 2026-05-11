@@ -93,6 +93,11 @@ const router = createRouter({
       component: () => import('@/views/MessagesView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/favorites/:id',
+      name: 'favorite-collection',
+      component: () => import('@/views/FavoriteCollectionView.vue'),
+    },
   ],
 })
 
